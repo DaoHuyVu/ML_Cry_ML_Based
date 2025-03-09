@@ -10,16 +10,14 @@ warnings.filterwarnings('ignore')
 import numpy as np
 import os
 import tensorflow as tf
-import tensorflow_addons as tfa
 
 
 from keras.layers import *
 from keras.models import *
 from time import time
-from keras.utils import np_utils
 # import tensorflow_model_analysis as tfma
 
-from keras.wrappers.scikit_learn import KerasClassifier
+#from keras.wrappers.scikit_learn import KerasClassifier
 # from sklearn.grid_search import GridSearchCV,RandomizedSearchCV
 
 
@@ -330,647 +328,647 @@ scoring = {
 # In[14]:
 
 # try:
-if 1:
-    method = "LR"
-    if method in ALGORITHMS:
-        print("-----------")
-        model = LogisticRegression(multi_class='multinomial', class_weight = "balanced", random_state = 42)
+# if 1:
+#     method = "LR"
+#     if method in ALGORITHMS:
+#         print("-----------")
+#         model = LogisticRegression(multi_class='multinomial', class_weight = "balanced", random_state = 42)
 
-        param_grid  = [
-            # {
-            #     'solver' : ['liblinear'],
-            #     'penalty' : ['l1', 'l2'],
-            #     'max_iter' : [50,100,200,500],
-            #     'C' : [0.001, 0.01, 0.1, 1]
-            # }, #no support for multinomial
-            # {
-            #     'solver' : ['saga'],
-            #     'penalty' : ['elasticnet', 'l1', 'l2', 'none'],
-            #     'max_iter' : [50,100,200,500],
-            #     'C' : [0.001, 0.01, 0.1, 1],
-            #     'l1_ratio' : [1]
-            # },
-            {
-                'LR__solver' : ['saga'],
-                'LR__penalty' : ['l1'],
-                'LR__max_iter' : [10],
-                'LR__C' : [0.2, 1],
-                'LR__l1_ratio' : [1]
-            },
-            {
-            'LR__solver' : ['lbfgs', 'sag', 'newton-cg', 'lbfgs'],
-            'LR__penalty' : ['l2', 'none'],
-            'LR__max_iter' : [50,100,200,500],
-            'LR__C' : [0.001, 0.01, 0.1, 1]
-            },
+#         param_grid  = [
+#             # {
+#             #     'solver' : ['liblinear'],
+#             #     'penalty' : ['l1', 'l2'],
+#             #     'max_iter' : [50,100,200,500],
+#             #     'C' : [0.001, 0.01, 0.1, 1]
+#             # }, #no support for multinomial
+#             # {
+#             #     'solver' : ['saga'],
+#             #     'penalty' : ['elasticnet', 'l1', 'l2', 'none'],
+#             #     'max_iter' : [50,100,200,500],
+#             #     'C' : [0.001, 0.01, 0.1, 1],
+#             #     'l1_ratio' : [1]
+#             # },
+#             {
+#                 'LR__solver' : ['saga'],
+#                 'LR__penalty' : ['l1'],
+#                 'LR__max_iter' : [10],
+#                 'LR__C' : [0.2, 1],
+#                 'LR__l1_ratio' : [1]
+#             },
+#             {
+#             'LR__solver' : ['lbfgs', 'sag', 'newton-cg', 'lbfgs'],
+#             'LR__penalty' : ['l2', 'none'],
+#             'LR__max_iter' : [50,100,200,500],
+#             'LR__C' : [0.001, 0.01, 0.1, 1]
+#             },
 
-        # add more parameter sets as needed...
-        ]
-        param_grid = {} if DEBUG else param_grid
+#         # add more parameter sets as needed...
+#         ]
+#         param_grid = {} if DEBUG else param_grid
 
-        #-------------------------------------------------------------------
-        scaler = StandardScaler() 
-        model = Pipeline(steps=[("scaler", StandardScaler()),   ("LR", LogisticRegression(multi_class='multinomial', class_weight = "balanced", random_state = 42))])
+#         #-------------------------------------------------------------------
+#         scaler = StandardScaler() 
+#         model = Pipeline(steps=[("scaler", StandardScaler()),   ("LR", LogisticRegression(multi_class='multinomial', class_weight = "balanced", random_state = 42))])
 
-        grid = GridSearchCV(estimator=model, param_grid=param_grid, cv = CV,
-                           scoring = scoring,
-                            refit='accuracy',
-                            return_train_score=True,
-                            error_score="raise",verbose=2
-                           )
-        grid_result = grid.fit(X_train, y_train)
-        grid_result.cv_results_["algorithm"] = method
+#         grid = GridSearchCV(estimator=model, param_grid=param_grid, cv = CV,
+#                            scoring = scoring,
+#                             refit='accuracy',
+#                             return_train_score=True,
+#                             error_score="raise",verbose=2
+#                            )
+#         grid_result = grid.fit(X_train, y_train)
+#         grid_result.cv_results_["algorithm"] = method
 
-        df = pd.DataFrame(grid_result.cv_results_)
-        df = df.sort_values(by=['mean_test_accuracy'], ascending=True).reset_index().round(4)
+#         df = pd.DataFrame(grid_result.cv_results_)
+#         df = df.sort_values(by=['mean_test_accuracy'], ascending=True).reset_index().round(4)
 
-        df = df.drop(['index', "mean_fit_time", "std_fit_time", "mean_score_time", "std_score_time"], axis=1)
-        # ####display(df)
-        Results["train"][method] = df
-        # df.to_csv("results.csv")
-
-
-        model = grid_result.best_estimator_ 
-        #------------------------------------------confusion matrix
-        y_pred = model.predict(X_test.astype('float32'))
-
-        # y_pred = y_pred.argmax(axis=1)
-        image_cm = mldl_uts.make_confusion_matrix(
-            y = y_test,#np.argmax(y_test, axis = 1),
-            y_pred = y_pred,
-        #         group_names = ['True Neg','False Pos','False Neg','True Pos'],
-            cmap = "gray",#"Greys",
-            categories = LABELS,
-            figsize = (15,10),
-            title = "Confusion matrix",
-                show = False, prefix = method +"_", save = False, return_cm = True
-        );
-        x = classification_report(y_test,y_pred, output_dict = True, target_names = LABELS)
-        joblib.dump(grid_result.best_estimator_ , f'{current_model}/models/gs_model_{method}.pkl')
-        x["model_size"] = os.path.getsize(f'{current_model}/models/gs_model_{method}.pkl')
-
-        Results["test"][method] = pd.DataFrame.from_dict(x).T
-        ####display(Results["test"][method])
-        print("Val-Accuracy: ", grid_result.best_score_, grid_result.best_params_,)
-
-        CV_record = save_params_train_val_best(Results["train"][method], grid_result.best_params_, f'{current_model}/{method}.csv')
-        CV_record_all = pd.concat([CV_record_all, CV_record])
-        Results["test"][method].to_csv(f"{current_model}/test_results_{method}.csv")
-
-# except Exception as e:
-#     print("ERROR:          ", e)
-
-# ## ------------------------------------------------------------------------------------------Ridge Classifier
+#         df = df.drop(['index', "mean_fit_time", "std_fit_time", "mean_score_time", "std_score_time"], axis=1)
+#         # ####display(df)
+#         Results["train"][method] = df
+#         # df.to_csv("results.csv")
 
 
-try:
-    method = "Ridge"
-    if method in ALGORITHMS:
-        model = RidgeClassifier(class_weight = "balanced", random_state = 42)
+#         model = grid_result.best_estimator_ 
+#         #------------------------------------------confusion matrix
+#         y_pred = model.predict(X_test.astype('float32'))
 
-        param_grid  = [
-            {
-            'Ridge__solver' : ["lbfgs"],
-            'Ridge__alpha' : [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
-            'Ridge__positive' : [True]
-            },
-            {
-            'Ridge__solver' : ["saga", "svd", "cholesky", "lsqr", "sparse_cg", "sag" ],
-            'Ridge__alpha' : [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
-            # 'l1_ratio' : [1]
-            },
+#         # y_pred = y_pred.argmax(axis=1)
+#         image_cm = mldl_uts.make_confusion_matrix(
+#             y = y_test,#np.argmax(y_test, axis = 1),
+#             y_pred = y_pred,
+#         #         group_names = ['True Neg','False Pos','False Neg','True Pos'],
+#             cmap = "gray",#"Greys",
+#             categories = LABELS,
+#             figsize = (15,10),
+#             title = "Confusion matrix",
+#                 show = False, prefix = method +"_", save = False, return_cm = True
+#         );
+#         x = classification_report(y_test,y_pred, output_dict = True, target_names = LABELS)
+#         joblib.dump(grid_result.best_estimator_ , f'{current_model}/models/gs_model_{method}.pkl')
+#         x["model_size"] = os.path.getsize(f'{current_model}/models/gs_model_{method}.pkl')
 
-        # add more parameter sets as needed...
-        ]
+#         Results["test"][method] = pd.DataFrame.from_dict(x).T
+#         ####display(Results["test"][method])
+#         print("Val-Accuracy: ", grid_result.best_score_, grid_result.best_params_,)
 
-        param_grid = {} if DEBUG else param_grid
+#         CV_record = save_params_train_val_best(Results["train"][method], grid_result.best_params_, f'{current_model}/{method}.csv')
+#         CV_record_all = pd.concat([CV_record_all, CV_record])
+#         Results["test"][method].to_csv(f"{current_model}/test_results_{method}.csv")
 
-        #-------------------------------------------------------------------
-        scaler = StandardScaler() 
-        model = Pipeline(steps=[("scaler", StandardScaler()),   ("Ridge", RidgeClassifier(class_weight = "balanced", random_state = 42))])
+# # except Exception as e:
+# #     print("ERROR:          ", e)
 
-        grid = GridSearchCV(estimator=model, param_grid=param_grid, cv = CV,
-                           scoring = scoring,
-                            refit='accuracy',
-                            return_train_score=True,
-                            error_score="raise",
-                            verbose=2
-                           )
-        grid_result = grid.fit(X_train, y_train)
-        grid_result.cv_results_["algorithm"] = method
-        df = pd.DataFrame(grid_result.cv_results_)
-        df = df.sort_values(by=['mean_test_accuracy'], ascending=True).reset_index().round(4)
-
-        df = df.drop(['index', "mean_fit_time", "std_fit_time", "mean_score_time", "std_score_time"], axis=1)
-        # ####display(df)
-        Results["train"][method] = df
-        # df.to_csv("results.csv")
-
-        model = grid_result.best_estimator_ 
-        #------------------------------------------confusion matrix
-        y_pred = model.predict(X_test.astype('float32'))
-
-        # y_pred = y_pred.argmax(axis=1)
-        image_cm = mldl_uts.make_confusion_matrix(
-            y = y_test,#np.argmax(y_test, axis = 1),
-            y_pred = y_pred,
-        #         group_names = ['True Neg','False Pos','False Neg','True Pos'],
-            cmap = "gray",#"Greys",
-            categories = LABELS,
-            figsize = (15,10),
-            title = "Confusion matrix",
-                show = False, prefix = method +"_", save = False, return_cm = True
-        );
-        x = classification_report(y_test,y_pred, output_dict = True, target_names = LABELS)
-        joblib.dump(grid_result.best_estimator_ , f'{current_model}/models/gs_model_{method}.pkl')
-        x["model_size"] = os.path.getsize(f'{current_model}/models/gs_model_{method}.pkl')
-
-        Results["test"][method] = pd.DataFrame.from_dict(x).T
-        ####display(Results["test"][method])
-        print("Accuracy: ", grid_result.best_score_, grid_result.best_params_,)
-        CV_record = save_params_train_val_best(Results["train"][method], grid_result.best_params_, f'{current_model}/{method}.csv')
-        CV_record_all = pd.concat([CV_record_all, CV_record])
-        Results["test"][method].to_csv(f"{current_model}/test_results_{method}.csv")
-except Exception as e:
-    print("ERROR:          ", e)
-# ## ------------------------------------------------------------------------------------------DecisionTreeClassifier
-
-
-try:
-    method = "DTC"
-    if method in ALGORITHMS:
-
-        model = DecisionTreeClassifier(criterion="entropy", class_weight = "balanced", random_state=42)
-
-
-        param_grid = dict(
-            DTC__max_depth = range(1,21),
-            DTC__max_leaf_nodes = [20, 30, 40, 50],
-            DTC__max_features = [6, 12, 18, 24]
-                         )
-        param_grid = {} if DEBUG else param_grid
-
-        #-------------------------------------------------------------------
-        scaler = StandardScaler() 
-        model = Pipeline(steps=[("scaler", StandardScaler()),   ("DTC", DecisionTreeClassifier(criterion="entropy", class_weight = "balanced", random_state=42))])
-
-        grid = GridSearchCV(estimator=model, param_grid=param_grid, cv = CV,
-                           scoring = scoring,
-                            refit='accuracy',
-                            return_train_score=True,
-                            error_score="raise",
-                            verbose=2
-                           )
-        grid_result = grid.fit(X_train, y_train)
-        grid_result.cv_results_["algorithm"] = method
-        df = pd.DataFrame(grid_result.cv_results_)
-        df = df.sort_values(by=['mean_test_accuracy'], ascending=False).reset_index().round(4)
-
-        df = df.drop(['index', "mean_fit_time", "std_fit_time", "mean_score_time", "std_score_time"], axis=1)
-        # ####display(df)
-        Results["train"][method] = df
-        # df.to_csv("results.csv")
-
-        model = grid_result.best_estimator_ 
-        #------------------------------------------confusion matrix
-        y_pred = model.predict(X_test.astype('float32'))
-
-        # y_pred = y_pred.argmax(axis=1)
-        image_cm = mldl_uts.make_confusion_matrix(
-            y = y_test,#np.argmax(y_test, axis = 1),
-            y_pred = y_pred,
-        #         group_names = ['True Neg','False Pos','False Neg','True Pos'],
-            cmap = "gray",#"Greys",
-            categories = LABELS,
-            figsize = (15,10),
-            title = "Confusion matrix",
-                show = False, prefix = method +"_", save = False, return_cm = True
-        );
-        x = classification_report(y_test,y_pred, output_dict = True, target_names = LABELS)
-        joblib.dump(grid_result.best_estimator_ , f'{current_model}/models/gs_model_{method}.pkl')
-        x["model_size"] = os.path.getsize(f'{current_model}/models/gs_model_{method}.pkl')
-        Results["test"][method] = pd.DataFrame.from_dict(x).T
-        ####display(Results["test"][method])
-        print("Val-Accuracy: ", grid_result.best_score_, grid_result.best_params_,)
-        CV_record = save_params_train_val_best(Results["train"][method], grid_result.best_params_, f'{current_model}/{method}.csv')
-        CV_record_all = pd.concat([CV_record_all, CV_record])
-        Results["test"][method].to_csv(f"{current_model}/test_results_{method}.csv")
-
-except Exception as e:
-    print("ERROR:          ", e)
-
-# ## ------------------------------------------------------------------------------------------RandomForestClassifier
+# # ## ------------------------------------------------------------------------------------------Ridge Classifier
 
 
 # try:
-if 1:
-    method = "RF"
-    if method in ALGORITHMS:
+#     method = "Ridge"
+#     if method in ALGORITHMS:
+#         model = RidgeClassifier(class_weight = "balanced", random_state = 42)
 
-        model = RandomForestClassifier(criterion="entropy", class_weight = "balanced", random_state=42)
+#         param_grid  = [
+#             {
+#             'Ridge__solver' : ["lbfgs"],
+#             'Ridge__alpha' : [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
+#             'Ridge__positive' : [True]
+#             },
+#             {
+#             'Ridge__solver' : ["saga", "svd", "cholesky", "lsqr", "sparse_cg", "sag" ],
+#             'Ridge__alpha' : [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
+#             # 'l1_ratio' : [1]
+#             },
 
-        # solver  = ['liblinear', 'newton-cg', 'lbfgs', 'sag', 'saga']#'lbfgs', 'liblinear', 'newton-cg', 'newton-cholesky', 'sag', 'saga']   
+#         # add more parameter sets as needed...
+#         ]
 
-        param_grid = dict(
-            RF__max_depth = range(1,21),
-            RF__max_leaf_nodes = [50],
-            RF__n_estimators = [10, 100, 200],
-            RF__max_features = ['sqrt', 'log2'],
-                         )
-        param_grid = {} if DEBUG else param_grid
+#         param_grid = {} if DEBUG else param_grid
 
-        #-------------------------------------------------------------------
-        scaler = StandardScaler() 
-        model = Pipeline(steps=[("scaler", StandardScaler()),   ("RF", RandomForestClassifier(criterion="entropy", class_weight = "balanced", random_state=42))])
+#         #-------------------------------------------------------------------
+#         scaler = StandardScaler() 
+#         model = Pipeline(steps=[("scaler", StandardScaler()),   ("Ridge", RidgeClassifier(class_weight = "balanced", random_state = 42))])
 
-        grid = GridSearchCV(estimator=model, param_grid=param_grid, cv = CV,
-                           scoring = scoring,
-                            refit='accuracy',
-                            return_train_score=True,
-                            error_score="raise",
-                            verbose=2
-                           )
-        grid_result = grid.fit(X_train, y_train)
-        grid_result.cv_results_["algorithm"] = method
-        df = pd.DataFrame(grid_result.cv_results_)
-        df = df.sort_values(by=['mean_test_accuracy'], ascending=False).reset_index().round(4)
+#         grid = GridSearchCV(estimator=model, param_grid=param_grid, cv = CV,
+#                            scoring = scoring,
+#                             refit='accuracy',
+#                             return_train_score=True,
+#                             error_score="raise",
+#                             verbose=2
+#                            )
+#         grid_result = grid.fit(X_train, y_train)
+#         grid_result.cv_results_["algorithm"] = method
+#         df = pd.DataFrame(grid_result.cv_results_)
+#         df = df.sort_values(by=['mean_test_accuracy'], ascending=True).reset_index().round(4)
 
-        df = df.drop(['index', "mean_fit_time", "std_fit_time", "mean_score_time", "std_score_time"], axis=1)
-        # ####display(df)
-        Results["train"][method] = df
-        # df.to_csv("results.csv")
+#         df = df.drop(['index', "mean_fit_time", "std_fit_time", "mean_score_time", "std_score_time"], axis=1)
+#         # ####display(df)
+#         Results["train"][method] = df
+#         # df.to_csv("results.csv")
 
-        model = grid_result.best_estimator_ 
-        #------------------------------------------confusion matrix
-        y_pred = model.predict(X_test.astype('float32'))
+#         model = grid_result.best_estimator_ 
+#         #------------------------------------------confusion matrix
+#         y_pred = model.predict(X_test.astype('float32'))
 
-        # y_pred = y_pred.argmax(axis=1)
-        image_cm = mldl_uts.make_confusion_matrix(
-            y = y_test,#np.argmax(y_test, axis = 1),
-            y_pred = y_pred,
-        #         group_names = ['True Neg','False Pos','False Neg','True Pos'],
-            cmap = "gray",#"Greys",
-            categories = LABELS,
-            figsize = (15,10),
-            title = "Confusion matrix",
-                show = False, prefix = method +"_", save = False, return_cm = True
-        );
-        x = classification_report(y_test,y_pred, output_dict = True, target_names = LABELS)
-        joblib.dump(grid_result.best_estimator_ , f'{current_model}/models/gs_model_{method}.pkl')
-        x["model_size"] = os.path.getsize(f'{current_model}/models/gs_model_{method}.pkl')
+#         # y_pred = y_pred.argmax(axis=1)
+#         image_cm = mldl_uts.make_confusion_matrix(
+#             y = y_test,#np.argmax(y_test, axis = 1),
+#             y_pred = y_pred,
+#         #         group_names = ['True Neg','False Pos','False Neg','True Pos'],
+#             cmap = "gray",#"Greys",
+#             categories = LABELS,
+#             figsize = (15,10),
+#             title = "Confusion matrix",
+#                 show = False, prefix = method +"_", save = False, return_cm = True
+#         );
+#         x = classification_report(y_test,y_pred, output_dict = True, target_names = LABELS)
+#         joblib.dump(grid_result.best_estimator_ , f'{current_model}/models/gs_model_{method}.pkl')
+#         x["model_size"] = os.path.getsize(f'{current_model}/models/gs_model_{method}.pkl')
 
-        Results["test"][method] = pd.DataFrame.from_dict(x).T
-        #######display(Results["test"][method])
-        print("Val-Accuracy: ", grid_result.best_score_, grid_result.best_params_,)
-        CV_record = save_params_train_val_best(Results["train"][method], grid_result.best_params_, f'{current_model}/{method}.csv')
-        CV_record_all = pd.concat([CV_record_all, CV_record])
-        Results["test"][method].to_csv(f"{current_model}/test_results_{method}.csv")
+#         Results["test"][method] = pd.DataFrame.from_dict(x).T
+#         ####display(Results["test"][method])
+#         print("Accuracy: ", grid_result.best_score_, grid_result.best_params_,)
+#         CV_record = save_params_train_val_best(Results["train"][method], grid_result.best_params_, f'{current_model}/{method}.csv')
+#         CV_record_all = pd.concat([CV_record_all, CV_record])
+#         Results["test"][method].to_csv(f"{current_model}/test_results_{method}.csv")
+# except Exception as e:
+#     print("ERROR:          ", e)
+# # ## ------------------------------------------------------------------------------------------DecisionTreeClassifier
+
+
+# try:
+#     method = "DTC"
+#     if method in ALGORITHMS:
+
+#         model = DecisionTreeClassifier(criterion="entropy", class_weight = "balanced", random_state=42)
+
+
+#         param_grid = dict(
+#             DTC__max_depth = range(1,21),
+#             DTC__max_leaf_nodes = [20, 30, 40, 50],
+#             DTC__max_features = [6, 12, 18, 24]
+#                          )
+#         param_grid = {} if DEBUG else param_grid
+
+#         #-------------------------------------------------------------------
+#         scaler = StandardScaler() 
+#         model = Pipeline(steps=[("scaler", StandardScaler()),   ("DTC", DecisionTreeClassifier(criterion="entropy", class_weight = "balanced", random_state=42))])
+
+#         grid = GridSearchCV(estimator=model, param_grid=param_grid, cv = CV,
+#                            scoring = scoring,
+#                             refit='accuracy',
+#                             return_train_score=True,
+#                             error_score="raise",
+#                             verbose=2
+#                            )
+#         grid_result = grid.fit(X_train, y_train)
+#         grid_result.cv_results_["algorithm"] = method
+#         df = pd.DataFrame(grid_result.cv_results_)
+#         df = df.sort_values(by=['mean_test_accuracy'], ascending=False).reset_index().round(4)
+
+#         df = df.drop(['index', "mean_fit_time", "std_fit_time", "mean_score_time", "std_score_time"], axis=1)
+#         # ####display(df)
+#         Results["train"][method] = df
+#         # df.to_csv("results.csv")
+
+#         model = grid_result.best_estimator_ 
+#         #------------------------------------------confusion matrix
+#         y_pred = model.predict(X_test.astype('float32'))
+
+#         # y_pred = y_pred.argmax(axis=1)
+#         image_cm = mldl_uts.make_confusion_matrix(
+#             y = y_test,#np.argmax(y_test, axis = 1),
+#             y_pred = y_pred,
+#         #         group_names = ['True Neg','False Pos','False Neg','True Pos'],
+#             cmap = "gray",#"Greys",
+#             categories = LABELS,
+#             figsize = (15,10),
+#             title = "Confusion matrix",
+#                 show = False, prefix = method +"_", save = False, return_cm = True
+#         );
+#         x = classification_report(y_test,y_pred, output_dict = True, target_names = LABELS)
+#         joblib.dump(grid_result.best_estimator_ , f'{current_model}/models/gs_model_{method}.pkl')
+#         x["model_size"] = os.path.getsize(f'{current_model}/models/gs_model_{method}.pkl')
+#         Results["test"][method] = pd.DataFrame.from_dict(x).T
+#         ####display(Results["test"][method])
+#         print("Val-Accuracy: ", grid_result.best_score_, grid_result.best_params_,)
+#         CV_record = save_params_train_val_best(Results["train"][method], grid_result.best_params_, f'{current_model}/{method}.csv')
+#         CV_record_all = pd.concat([CV_record_all, CV_record])
+#         Results["test"][method].to_csv(f"{current_model}/test_results_{method}.csv")
 
 # except Exception as e:
 #     print("ERROR:          ", e)
 
-# ## ------------------------------------------------------------------------------------------GaussianNB
+# # ## ------------------------------------------------------------------------------------------RandomForestClassifier
 
 
-try:
-    method = "NB"
-    if method in ALGORITHMS:
-        model = GaussianNB()
+# # try:
+# if 1:
+#     method = "RF"
+#     if method in ALGORITHMS:
 
-        # solver  = ['liblinear', 'newton-cg', 'lbfgs', 'sag', 'saga']#'lbfgs', 'liblinear', 'newton-cg', 'newton-cholesky', 'sag', 'saga']   
+#         model = RandomForestClassifier(criterion="entropy", class_weight = "balanced", random_state=42)
 
-        param_grid = dict(
-            NB__var_smoothing = np.logspace(0,-9, num=100)
-                         )
-        param_grid = {} if DEBUG else param_grid
+#         # solver  = ['liblinear', 'newton-cg', 'lbfgs', 'sag', 'saga']#'lbfgs', 'liblinear', 'newton-cg', 'newton-cholesky', 'sag', 'saga']   
 
-        #-------------------------------------------------------------------
-        scaler = StandardScaler() 
-        model = Pipeline(steps=[("scaler", StandardScaler()),   ("NB", GaussianNB())])
+#         param_grid = dict(
+#             RF__max_depth = range(1,21),
+#             RF__max_leaf_nodes = [50],
+#             RF__n_estimators = [10, 100, 200],
+#             RF__max_features = ['sqrt', 'log2'],
+#                          )
+#         param_grid = {} if DEBUG else param_grid
 
-        grid = GridSearchCV(estimator=model, param_grid=param_grid, cv = CV,
-                           scoring = scoring,
-                            refit='accuracy',
-                            return_train_score=True,
-                            error_score="raise",
-                            verbose=2
-                           )
-        grid_result = grid.fit(X_train, y_train)
-        grid_result.cv_results_["algorithm"] = method
-        df = pd.DataFrame(grid_result.cv_results_)
-        df = df.sort_values(by=['mean_test_accuracy'], ascending=False).reset_index().round(4)
+#         #-------------------------------------------------------------------
+#         scaler = StandardScaler() 
+#         model = Pipeline(steps=[("scaler", StandardScaler()),   ("RF", RandomForestClassifier(criterion="entropy", class_weight = "balanced", random_state=42))])
 
-        df = df.drop(['index', "mean_fit_time", "std_fit_time", "mean_score_time", "std_score_time"], axis=1)
-        # ####display(df)
-        Results["train"][method] = df
-        # df.to_csv("results.csv")
+#         grid = GridSearchCV(estimator=model, param_grid=param_grid, cv = CV,
+#                            scoring = scoring,
+#                             refit='accuracy',
+#                             return_train_score=True,
+#                             error_score="raise",
+#                             verbose=2
+#                            )
+#         grid_result = grid.fit(X_train, y_train)
+#         grid_result.cv_results_["algorithm"] = method
+#         df = pd.DataFrame(grid_result.cv_results_)
+#         df = df.sort_values(by=['mean_test_accuracy'], ascending=False).reset_index().round(4)
 
-        model = grid_result.best_estimator_ 
-        #------------------------------------------confusion matrix
-        y_pred = model.predict(X_test.astype('float32'))
+#         df = df.drop(['index', "mean_fit_time", "std_fit_time", "mean_score_time", "std_score_time"], axis=1)
+#         # ####display(df)
+#         Results["train"][method] = df
+#         # df.to_csv("results.csv")
 
-        # y_pred = y_pred.argmax(axis=1)
-        image_cm = mldl_uts.make_confusion_matrix(
-            y = y_test,#np.argmax(y_test, axis = 1),
-            y_pred = y_pred,
-        #         group_names = ['True Neg','False Pos','False Neg','True Pos'],
-            cmap = "gray",#"Greys",
-            categories = LABELS,
-            figsize = (15,10),
-            title = "Confusion matrix",
-                show = False, prefix = method +"_", save = False, return_cm = True
-        );
-        x = classification_report(y_test,y_pred, output_dict = True, target_names = LABELS)
-        joblib.dump(grid_result.best_estimator_ , f'{current_model}/models/gs_model_{method}.pkl')
-        x["model_size"] = os.path.getsize(f'{current_model}/models/gs_model_{method}.pkl')
+#         model = grid_result.best_estimator_ 
+#         #------------------------------------------confusion matrix
+#         y_pred = model.predict(X_test.astype('float32'))
 
-        Results["test"][method] = pd.DataFrame.from_dict(x).T
-        ####display(Results["test"][method])
-        print("Val-Accuracy: ", grid_result.best_score_, grid_result.best_params_,)
-        CV_record = save_params_train_val_best(Results["train"][method], grid_result.best_params_, f'{current_model}/{method}.csv')
-        CV_record_all = pd.concat([CV_record_all, CV_record])
-        Results["test"][method].to_csv(f"{current_model}/test_results_{method}.csv")
+#         # y_pred = y_pred.argmax(axis=1)
+#         image_cm = mldl_uts.make_confusion_matrix(
+#             y = y_test,#np.argmax(y_test, axis = 1),
+#             y_pred = y_pred,
+#         #         group_names = ['True Neg','False Pos','False Neg','True Pos'],
+#             cmap = "gray",#"Greys",
+#             categories = LABELS,
+#             figsize = (15,10),
+#             title = "Confusion matrix",
+#                 show = False, prefix = method +"_", save = False, return_cm = True
+#         );
+#         x = classification_report(y_test,y_pred, output_dict = True, target_names = LABELS)
+#         joblib.dump(grid_result.best_estimator_ , f'{current_model}/models/gs_model_{method}.pkl')
+#         x["model_size"] = os.path.getsize(f'{current_model}/models/gs_model_{method}.pkl')
 
-except Exception as e:
-    print("ERROR:          ", e)
+#         Results["test"][method] = pd.DataFrame.from_dict(x).T
+#         #######display(Results["test"][method])
+#         print("Val-Accuracy: ", grid_result.best_score_, grid_result.best_params_,)
+#         CV_record = save_params_train_val_best(Results["train"][method], grid_result.best_params_, f'{current_model}/{method}.csv')
+#         CV_record_all = pd.concat([CV_record_all, CV_record])
+#         Results["test"][method].to_csv(f"{current_model}/test_results_{method}.csv")
+
+# # except Exception as e:
+# #     print("ERROR:          ", e)
+
+# # ## ------------------------------------------------------------------------------------------GaussianNB
+
+
+# try:
+#     method = "NB"
+#     if method in ALGORITHMS:
+#         model = GaussianNB()
+
+#         # solver  = ['liblinear', 'newton-cg', 'lbfgs', 'sag', 'saga']#'lbfgs', 'liblinear', 'newton-cg', 'newton-cholesky', 'sag', 'saga']   
+
+#         param_grid = dict(
+#             NB__var_smoothing = np.logspace(0,-9, num=100)
+#                          )
+#         param_grid = {} if DEBUG else param_grid
+
+#         #-------------------------------------------------------------------
+#         scaler = StandardScaler() 
+#         model = Pipeline(steps=[("scaler", StandardScaler()),   ("NB", GaussianNB())])
+
+#         grid = GridSearchCV(estimator=model, param_grid=param_grid, cv = CV,
+#                            scoring = scoring,
+#                             refit='accuracy',
+#                             return_train_score=True,
+#                             error_score="raise",
+#                             verbose=2
+#                            )
+#         grid_result = grid.fit(X_train, y_train)
+#         grid_result.cv_results_["algorithm"] = method
+#         df = pd.DataFrame(grid_result.cv_results_)
+#         df = df.sort_values(by=['mean_test_accuracy'], ascending=False).reset_index().round(4)
+
+#         df = df.drop(['index', "mean_fit_time", "std_fit_time", "mean_score_time", "std_score_time"], axis=1)
+#         # ####display(df)
+#         Results["train"][method] = df
+#         # df.to_csv("results.csv")
+
+#         model = grid_result.best_estimator_ 
+#         #------------------------------------------confusion matrix
+#         y_pred = model.predict(X_test.astype('float32'))
+
+#         # y_pred = y_pred.argmax(axis=1)
+#         image_cm = mldl_uts.make_confusion_matrix(
+#             y = y_test,#np.argmax(y_test, axis = 1),
+#             y_pred = y_pred,
+#         #         group_names = ['True Neg','False Pos','False Neg','True Pos'],
+#             cmap = "gray",#"Greys",
+#             categories = LABELS,
+#             figsize = (15,10),
+#             title = "Confusion matrix",
+#                 show = False, prefix = method +"_", save = False, return_cm = True
+#         );
+#         x = classification_report(y_test,y_pred, output_dict = True, target_names = LABELS)
+#         joblib.dump(grid_result.best_estimator_ , f'{current_model}/models/gs_model_{method}.pkl')
+#         x["model_size"] = os.path.getsize(f'{current_model}/models/gs_model_{method}.pkl')
+
+#         Results["test"][method] = pd.DataFrame.from_dict(x).T
+#         ####display(Results["test"][method])
+#         print("Val-Accuracy: ", grid_result.best_score_, grid_result.best_params_,)
+#         CV_record = save_params_train_val_best(Results["train"][method], grid_result.best_params_, f'{current_model}/{method}.csv')
+#         CV_record_all = pd.concat([CV_record_all, CV_record])
+#         Results["test"][method].to_csv(f"{current_model}/test_results_{method}.csv")
+
+# except Exception as e:
+#     print("ERROR:          ", e)
 
 # ## ------------------------------------------------------------------------------------------MLPClassifier not
 
 
-try:
-    method = "MLP"
-    if method in ALGORITHMS:
+# try:
+#     method = "MLP"
+#     if method in ALGORITHMS:
 
-        model = MLPClassifier(max_iter=500, batch_size = 32, activation='relu', shuffle = False, random_state = 42)
-
-
-        param_grid = dict(
-            MLP__hidden_layer_sizes = [(50,50,50), (50,100,50), (100,)],
-            MLP__activation = ['identity', 'logistic', 'tanh', 'relu'],
-            MLP__solver = ['sgd', 'adam', 'lbfgs'],
-            MLP__alpha = [0.0001, 0.05],
-            MLP__learning_rate = ['constant','adaptive', 'invscaling'],
-                    )
-        param_grid = {} if DEBUG else param_grid
-
-        #-------------------------------------------------------------------
-        scaler = StandardScaler() 
-        model = Pipeline(steps=[("scaler", StandardScaler()),   ("MLP", MLPClassifier(max_iter=500, batch_size = 32, activation='relu', shuffle = False, random_state = 42))])
-
-        grid = GridSearchCV(estimator=model, param_grid=param_grid, cv = CV,
-                           scoring = scoring,
-                            refit='accuracy',
-                            return_train_score=True,
-                            error_score="raise",
-                            verbose=2
-                           )
-        grid_result = grid.fit(X_train, y_train)
-        grid_result.cv_results_["algorithm"] = method
-        df = pd.DataFrame(grid_result.cv_results_)
-        df = df.sort_values(by=['mean_test_accuracy'], ascending=False).reset_index().round(4)
-
-        df = df.drop(['index', "mean_fit_time", "std_fit_time", "mean_score_time", "std_score_time"], axis=1)
-        # ####display(df)
-        Results["train"][method] = df
-        # df.to_csv("results.csv")
-
-        model = grid_result.best_estimator_ 
-        #------------------------------------------confusion matrix
-        y_pred = model.predict(X_test.astype('float32'))
-
-        # y_pred = y_pred.argmax(axis=1)
-        image_cm = mldl_uts.make_confusion_matrix(
-            y = y_test,#np.argmax(y_test, axis = 1),
-            y_pred = y_pred,
-        #         group_names = ['True Neg','False Pos','False Neg','True Pos'],
-            cmap = "gray",#"Greys",
-            categories = LABELS,
-            figsize = (15,10),
-            title = "Confusion matrix",
-                show = False, prefix = method +"_", save = False, return_cm = True
-        );
-        x = classification_report(y_test,y_pred, output_dict = True, target_names = LABELS)
-        joblib.dump(grid_result.best_estimator_ , f'{current_model}/models/gs_model_{method}.pkl')
-        x["model_size"] = os.path.getsize(f'{current_model}/models/gs_model_{method}.pkl')
+#         model = MLPClassifier(max_iter=500, batch_size = 32, activation='relu', shuffle = False, random_state = 42)
 
 
-        Results["test"][method] = pd.DataFrame.from_dict(x).T
-        ####display(Results["test"][method])
-        print("Val-Accuracy: ", grid_result.best_score_, grid_result.best_params_,)
-        CV_record = save_params_train_val_best(Results["train"][method], grid_result.best_params_, f'{current_model}/{method}.csv')
-        CV_record_all = pd.concat([CV_record_all, CV_record])
-        Results["test"][method].to_csv(f"{current_model}/test_results_{method}.csv")
+#         param_grid = dict(
+#             MLP__hidden_layer_sizes = [(50,50,50), (50,100,50), (100,)],
+#             MLP__activation = ['identity', 'logistic', 'tanh', 'relu'],
+#             MLP__solver = ['sgd', 'adam', 'lbfgs'],
+#             MLP__alpha = [0.0001, 0.05],
+#             MLP__learning_rate = ['constant','adaptive', 'invscaling'],
+#                     )
+#         param_grid = {} if DEBUG else param_grid
 
-except Exception as e:
-    print("ERROR:          ", e)
+#         #-------------------------------------------------------------------
+#         scaler = StandardScaler() 
+#         model = Pipeline(steps=[("scaler", StandardScaler()),   ("MLP", MLPClassifier(max_iter=500, batch_size = 32, activation='relu', shuffle = False, random_state = 42))])
 
-# ## ------------------------------------------------------------------------------------------KNeighborsClassifier
+#         grid = GridSearchCV(estimator=model, param_grid=param_grid, cv = CV,
+#                            scoring = scoring,
+#                             refit='accuracy',
+#                             return_train_score=True,
+#                             error_score="raise",
+#                             verbose=2
+#                            )
+#         grid_result = grid.fit(X_train, y_train)
+#         grid_result.cv_results_["algorithm"] = method
+#         df = pd.DataFrame(grid_result.cv_results_)
+#         df = df.sort_values(by=['mean_test_accuracy'], ascending=False).reset_index().round(4)
 
-try:
-    method = "KNN"
-    if method in ALGORITHMS:
+#         df = df.drop(['index', "mean_fit_time", "std_fit_time", "mean_score_time", "std_score_time"], axis=1)
+#         # ####display(df)
+#         Results["train"][method] = df
+#         # df.to_csv("results.csv")
 
-        model =  KNeighborsClassifier()
+#         model = grid_result.best_estimator_ 
+#         #------------------------------------------confusion matrix
+#         y_pred = model.predict(X_test.astype('float32'))
 
-        param_grid = dict(
-            KNN__n_neighbors = range(1,21, 2),
-            KNN__weights = ['uniform', 'distance'],
-            KNN__metric = ['euclidean'],#, 'manhattan', 'minkowski']
-            # pca__n_components = [15, 20],
-                         )
-        param_grid = {} if DEBUG else param_grid
-
-        #-------------------------------------------------------------------
-        scaler = StandardScaler() 
-        model = Pipeline(steps=[("scaler", StandardScaler()),   ("KNN", KNeighborsClassifier())])
-        grid = GridSearchCV(estimator=model, param_grid=param_grid, cv = CV,
-                           scoring = scoring,
-                            refit='accuracy',
-                            return_train_score=True,
-                            error_score="raise",
-                            verbose=2
-                           )
-        grid_result = grid.fit(X_train, y_train)
-        grid_result.cv_results_["algorithm"] = method
-        df = pd.DataFrame(grid_result.cv_results_)
-        df = df.sort_values(by=['mean_test_accuracy'], ascending=False).reset_index().round(4)
-
-        df = df.drop(['index', "mean_fit_time", "std_fit_time", "mean_score_time", "std_score_time"], axis=1)
-        # ####display(df)
-        Results["train"][method] = df
-        # df.to_csv("results.csv")
-
-        model = grid_result.best_estimator_ 
-        #------------------------------------------confusion matrix
-        y_pred = model.predict(X_test.astype('float32'))
-
-        # y_pred = y_pred.argmax(axis=1)
-        image_cm = mldl_uts.make_confusion_matrix(
-            y = y_test,#np.argmax(y_test, axis = 1),
-            y_pred = y_pred,
-        #         group_names = ['True Neg','False Pos','False Neg','True Pos'],
-            cmap = "gray",#"Greys",
-            categories = LABELS,
-            figsize = (15,10),
-            title = "Confusion matrix",
-                show = False, prefix = method +"_", save = False, return_cm = True
-        );
-        x = classification_report(y_test,y_pred, output_dict = True, target_names = LABELS)
-        joblib.dump(grid_result.best_estimator_ , f'{current_model}/models/gs_model_{method}.pkl')
-        x["model_size"] = os.path.getsize(f'{current_model}/models/gs_model_{method}.pkl')
-        Results["test"][method] = pd.DataFrame.from_dict(x).T
-        ####display(Results["test"][method])
-        print("Val-Accuracy: ", grid_result.best_score_, grid_result.best_params_,)
-        CV_record = save_params_train_val_best(Results["train"][method], grid_result.best_params_, f'{current_model}/{method}.csv')
-        CV_record_all = pd.concat([CV_record_all, CV_record])
-        Results["test"][method].to_csv(f"{current_model}/test_results_{method}.csv")
-
-except Exception as e:
-    print("ERROR:          ", e)
-# ## ------------------------------------------------------------------------------------------Stochastic Gradient Boosting or Gradient Boosting Machine (GBM) 
-try:
-    method = "SGD"
-    if method in ALGORITHMS:
-
-        model =  GradientBoostingClassifier(random_state=42)
-
-        param_grid = dict(
-            SGD__n_estimators = [5, 25, 50, 75, 100],
-            SGD__learning_rate = [0.001, 0.01, 0.1, 1],
-            SGD__subsample = [0.5, 0.7, 1.0],
-            SGD__max_depth = [7, 9, 11],
-                         )
-        param_grid = {} if DEBUG else param_grid
-
-        #-----------------------------------------------------------
-        scaler = StandardScaler() 
-        model = Pipeline(steps=[("scaler", StandardScaler()),   ("SGD", GradientBoostingClassifier(random_state=42))])
-
-        grid = GridSearchCV(estimator=model, param_grid=param_grid, cv = CV,
-                           scoring = scoring,
-                            refit='accuracy',
-                            return_train_score=True,
-                            error_score="raise",
-                            verbose=2
-                           )
-        grid_result = grid.fit(X_train, y_train)
-        grid_result.cv_results_["algorithm"] = method
-        df = pd.DataFrame(grid_result.cv_results_)
-        df = df.sort_values(by=['mean_test_accuracy'], ascending=False).reset_index().round(4)
-
-        df = df.drop(['index', "mean_fit_time", "std_fit_time", "mean_score_time", "std_score_time"], axis=1)
-        # ####display(df)
-        Results["train"][method] = df
-        # df.to_csv("results.csv")
-
-        model = grid_result.best_estimator_ 
-        #------------------------------------------confusion matrix
-        y_pred = model.predict(X_test.astype('float32'))
-
-        aa = y_test#(np.argmax(y_test_enc.values, axis = 1))
-        bb = y_pred#(np.argmax(y_pred, axis = 1))
-
-        # y_pred = y_pred.argmax(axis=1)
-        image_cm = mldl_uts.make_confusion_matrix(
-            y = aa,
-            y_pred = bb,
-            cmap = "gray",#"Greys",
-            categories = LABELS,
-            figsize = (15,10),
-            title = "Confusion matrix",
-                show = False, prefix = method +"_", save = False, return_cm = True
-        );
-        x = classification_report(aa,bb, output_dict = True, target_names = LABELS)
-        joblib.dump(grid_result.best_estimator_ , f'{current_model}/models/gs_model_{method}.pkl')
-        x["model_size"] = os.path.getsize(f'{current_model}/models/gs_model_{method}.pkl')
+#         # y_pred = y_pred.argmax(axis=1)
+#         image_cm = mldl_uts.make_confusion_matrix(
+#             y = y_test,#np.argmax(y_test, axis = 1),
+#             y_pred = y_pred,
+#         #         group_names = ['True Neg','False Pos','False Neg','True Pos'],
+#             cmap = "gray",#"Greys",
+#             categories = LABELS,
+#             figsize = (15,10),
+#             title = "Confusion matrix",
+#                 show = False, prefix = method +"_", save = False, return_cm = True
+#         );
+#         x = classification_report(y_test,y_pred, output_dict = True, target_names = LABELS)
+#         joblib.dump(grid_result.best_estimator_ , f'{current_model}/models/gs_model_{method}.pkl')
+#         x["model_size"] = os.path.getsize(f'{current_model}/models/gs_model_{method}.pkl')
 
 
-        Results["test"][method] = pd.DataFrame.from_dict(x).T
-        ####display(Results["test"][method])
-        print("Val-Accuracy: ", grid_result.best_score_, grid_result.best_params_,)
-        CV_record = save_params_train_val_best(Results["train"][method], grid_result.best_params_, f'{current_model}/{method}.csv')
-        CV_record_all = pd.concat([CV_record_all, CV_record])
-        Results["test"][method].to_csv(f"{current_model}/test_results_{method}.csv")
+#         Results["test"][method] = pd.DataFrame.from_dict(x).T
+#         ####display(Results["test"][method])
+#         print("Val-Accuracy: ", grid_result.best_score_, grid_result.best_params_,)
+#         CV_record = save_params_train_val_best(Results["train"][method], grid_result.best_params_, f'{current_model}/{method}.csv')
+#         CV_record_all = pd.concat([CV_record_all, CV_record])
+#         Results["test"][method].to_csv(f"{current_model}/test_results_{method}.csv")
 
-except Exception as e:
-    print("ERROR:          ", e)
-# ## ------------------------------------------------------------------------------------------XGBClassifier
+# except Exception as e:
+#     print("ERROR:          ", e)
 
-try:
-    method = "XGB"
-    if method in ALGORITHMS:
+# # ## ------------------------------------------------------------------------------------------KNeighborsClassifier
 
-        model =  XGBClassifier()
+# try:
+#     method = "KNN"
+#     if method in ALGORITHMS:
 
-        #     reg_alpha = hp.quniform('reg_alpha', 40,180,1),
-        #     reg_lambda = np.random.uniform(0,1,10),
-        #     'colsample_bytree' : hp.uniform('colsample_bytree', 0.5,1),
-        #     'min_child_weight' : np.random.uniform(0,10,3),
-        seeding(42)
-        param_grid = dict(
-            XGB__max_depth = range(1, 11, 2),
-            XGB__gamma = np.random.uniform(0,1,3),
-            XGB__n_estimators = range(40, 50),
-            XGB__tree_method = ["hist"],
-            XGB__learning_rate = [0.1, 0.001, 0.001],
-            XGB__seed = [42]
-                         )
-        param_grid = {} if DEBUG else param_grid
+#         model =  KNeighborsClassifier()
 
-        #-------------------------------------------------------------------
-        scaler = StandardScaler() 
-        model = Pipeline(steps=[("scaler", StandardScaler()),   ("XGB", XGBClassifier())])
-        grid = GridSearchCV(estimator=model, param_grid=param_grid, cv = CV,
-                           scoring = scoring,
-                            refit='accuracy',
-                            return_train_score=True,
-                            error_score="raise",
-                            verbose=2
-                           )
-        print(y_train_enc)
-        grid_result = grid.fit(X_train, y_train_enc.values)
-        grid_result.cv_results_["algorithm"] = method
-        df = pd.DataFrame(grid_result.cv_results_)
-        df = df.sort_values(by=['mean_test_accuracy'], ascending=False).reset_index().round(4)
+#         param_grid = dict(
+#             KNN__n_neighbors = range(1,21, 2),
+#             KNN__weights = ['uniform', 'distance'],
+#             KNN__metric = ['euclidean'],#, 'manhattan', 'minkowski']
+#             # pca__n_components = [15, 20],
+#                          )
+#         param_grid = {} if DEBUG else param_grid
 
-        df = df.drop(['index', "mean_fit_time", "std_fit_time", "mean_score_time", "std_score_time"], axis=1)
-        # ####display(df)
-        Results["train"][method] = df
-        # df.to_csv("results.csv")
+#         #-------------------------------------------------------------------
+#         scaler = StandardScaler() 
+#         model = Pipeline(steps=[("scaler", StandardScaler()),   ("KNN", KNeighborsClassifier())])
+#         grid = GridSearchCV(estimator=model, param_grid=param_grid, cv = CV,
+#                            scoring = scoring,
+#                             refit='accuracy',
+#                             return_train_score=True,
+#                             error_score="raise",
+#                             verbose=2
+#                            )
+#         grid_result = grid.fit(X_train, y_train)
+#         grid_result.cv_results_["algorithm"] = method
+#         df = pd.DataFrame(grid_result.cv_results_)
+#         df = df.sort_values(by=['mean_test_accuracy'], ascending=False).reset_index().round(4)
 
-        model = grid_result.best_estimator_ 
-        #------------------------------------------confusion matrix
-        y_pred = model.predict(X_test.astype('float32'))
+#         df = df.drop(['index', "mean_fit_time", "std_fit_time", "mean_score_time", "std_score_time"], axis=1)
+#         # ####display(df)
+#         Results["train"][method] = df
+#         # df.to_csv("results.csv")
 
-        # aa = (np.argmax(y_test_enc.values, axis = 1))
-        aa = pd.from_dummies(y_test_enc).values
-        bb = (np.argmax(y_pred, axis = 1))
-        bb = [LABELS[e] for e in bb]
+#         model = grid_result.best_estimator_ 
+#         #------------------------------------------confusion matrix
+#         y_pred = model.predict(X_test.astype('float32'))
 
-        image_cm = mldl_uts.make_confusion_matrix(
-            y = aa,
-            y_pred = bb,
-            cmap = "gray",#"Greys",
-            categories = LABELS,
-            figsize = (15,10),
-            title = "Confusion matrix",
-                show = False, prefix = method +"_", save = False, return_cm = True
-        );
-        x = classification_report(aa,bb, output_dict = True, target_names = LABELS)
-        joblib.dump(grid_result.best_estimator_ , f'{current_model}/models/gs_model_{method}.pkl')
-        x["model_size"] = os.path.getsize(f'{current_model}/models/gs_model_{method}.pkl')
+#         # y_pred = y_pred.argmax(axis=1)
+#         image_cm = mldl_uts.make_confusion_matrix(
+#             y = y_test,#np.argmax(y_test, axis = 1),
+#             y_pred = y_pred,
+#         #         group_names = ['True Neg','False Pos','False Neg','True Pos'],
+#             cmap = "gray",#"Greys",
+#             categories = LABELS,
+#             figsize = (15,10),
+#             title = "Confusion matrix",
+#                 show = False, prefix = method +"_", save = False, return_cm = True
+#         );
+#         x = classification_report(y_test,y_pred, output_dict = True, target_names = LABELS)
+#         joblib.dump(grid_result.best_estimator_ , f'{current_model}/models/gs_model_{method}.pkl')
+#         x["model_size"] = os.path.getsize(f'{current_model}/models/gs_model_{method}.pkl')
+#         Results["test"][method] = pd.DataFrame.from_dict(x).T
+#         ####display(Results["test"][method])
+#         print("Val-Accuracy: ", grid_result.best_score_, grid_result.best_params_,)
+#         CV_record = save_params_train_val_best(Results["train"][method], grid_result.best_params_, f'{current_model}/{method}.csv')
+#         CV_record_all = pd.concat([CV_record_all, CV_record])
+#         Results["test"][method].to_csv(f"{current_model}/test_results_{method}.csv")
+
+# except Exception as e:
+#     print("ERROR:          ", e)
+# # ## ------------------------------------------------------------------------------------------Stochastic Gradient Boosting or Gradient Boosting Machine (GBM) 
+# try:
+#     method = "SGD"
+#     if method in ALGORITHMS:
+
+#         model =  GradientBoostingClassifier(random_state=42)
+
+#         param_grid = dict(
+#             SGD__n_estimators = [5, 25, 50, 75, 100],
+#             SGD__learning_rate = [0.001, 0.01, 0.1, 1],
+#             SGD__subsample = [0.5, 0.7, 1.0],
+#             SGD__max_depth = [7, 9, 11],
+#                          )
+#         param_grid = {} if DEBUG else param_grid
+
+#         #-----------------------------------------------------------
+#         scaler = StandardScaler() 
+#         model = Pipeline(steps=[("scaler", StandardScaler()),   ("SGD", GradientBoostingClassifier(random_state=42))])
+
+#         grid = GridSearchCV(estimator=model, param_grid=param_grid, cv = CV,
+#                            scoring = scoring,
+#                             refit='accuracy',
+#                             return_train_score=True,
+#                             error_score="raise",
+#                             verbose=2
+#                            )
+#         grid_result = grid.fit(X_train, y_train)
+#         grid_result.cv_results_["algorithm"] = method
+#         df = pd.DataFrame(grid_result.cv_results_)
+#         df = df.sort_values(by=['mean_test_accuracy'], ascending=False).reset_index().round(4)
+
+#         df = df.drop(['index', "mean_fit_time", "std_fit_time", "mean_score_time", "std_score_time"], axis=1)
+#         # ####display(df)
+#         Results["train"][method] = df
+#         # df.to_csv("results.csv")
+
+#         model = grid_result.best_estimator_ 
+#         #------------------------------------------confusion matrix
+#         y_pred = model.predict(X_test.astype('float32'))
+
+#         aa = y_test#(np.argmax(y_test_enc.values, axis = 1))
+#         bb = y_pred#(np.argmax(y_pred, axis = 1))
+
+#         # y_pred = y_pred.argmax(axis=1)
+#         image_cm = mldl_uts.make_confusion_matrix(
+#             y = aa,
+#             y_pred = bb,
+#             cmap = "gray",#"Greys",
+#             categories = LABELS,
+#             figsize = (15,10),
+#             title = "Confusion matrix",
+#                 show = False, prefix = method +"_", save = False, return_cm = True
+#         );
+#         x = classification_report(aa,bb, output_dict = True, target_names = LABELS)
+#         joblib.dump(grid_result.best_estimator_ , f'{current_model}/models/gs_model_{method}.pkl')
+#         x["model_size"] = os.path.getsize(f'{current_model}/models/gs_model_{method}.pkl')
+
+
+#         Results["test"][method] = pd.DataFrame.from_dict(x).T
+#         ####display(Results["test"][method])
+#         print("Val-Accuracy: ", grid_result.best_score_, grid_result.best_params_,)
+#         CV_record = save_params_train_val_best(Results["train"][method], grid_result.best_params_, f'{current_model}/{method}.csv')
+#         CV_record_all = pd.concat([CV_record_all, CV_record])
+#         Results["test"][method].to_csv(f"{current_model}/test_results_{method}.csv")
+
+# except Exception as e:
+#     print("ERROR:          ", e)
+# # ## ------------------------------------------------------------------------------------------XGBClassifier
+
+# try:
+#     method = "XGB"
+#     if method in ALGORITHMS:
+
+#         model =  XGBClassifier()
+
+#         #     reg_alpha = hp.quniform('reg_alpha', 40,180,1),
+#         #     reg_lambda = np.random.uniform(0,1,10),
+#         #     'colsample_bytree' : hp.uniform('colsample_bytree', 0.5,1),
+#         #     'min_child_weight' : np.random.uniform(0,10,3),
+#         seeding(42)
+#         param_grid = dict(
+#             XGB__max_depth = range(1, 11, 2),
+#             XGB__gamma = np.random.uniform(0,1,3),
+#             XGB__n_estimators = range(40, 50),
+#             XGB__tree_method = ["hist"],
+#             XGB__learning_rate = [0.1, 0.001, 0.001],
+#             XGB__seed = [42]
+#                          )
+#         param_grid = {} if DEBUG else param_grid
+
+#         #-------------------------------------------------------------------
+#         scaler = StandardScaler() 
+#         model = Pipeline(steps=[("scaler", StandardScaler()),   ("XGB", XGBClassifier())])
+#         grid = GridSearchCV(estimator=model, param_grid=param_grid, cv = CV,
+#                            scoring = scoring,
+#                             refit='accuracy',
+#                             return_train_score=True,
+#                             error_score="raise",
+#                             verbose=2
+#                            )
+#         print(y_train_enc)
+#         grid_result = grid.fit(X_train, y_train_enc.values)
+#         grid_result.cv_results_["algorithm"] = method
+#         df = pd.DataFrame(grid_result.cv_results_)
+#         df = df.sort_values(by=['mean_test_accuracy'], ascending=False).reset_index().round(4)
+
+#         df = df.drop(['index', "mean_fit_time", "std_fit_time", "mean_score_time", "std_score_time"], axis=1)
+#         # ####display(df)
+#         Results["train"][method] = df
+#         # df.to_csv("results.csv")
+
+#         model = grid_result.best_estimator_ 
+#         #------------------------------------------confusion matrix
+#         y_pred = model.predict(X_test.astype('float32'))
+
+#         # aa = (np.argmax(y_test_enc.values, axis = 1))
+#         aa = pd.from_dummies(y_test_enc).values
+#         bb = (np.argmax(y_pred, axis = 1))
+#         bb = [LABELS[e] for e in bb]
+
+#         image_cm = mldl_uts.make_confusion_matrix(
+#             y = aa,
+#             y_pred = bb,
+#             cmap = "gray",#"Greys",
+#             categories = LABELS,
+#             figsize = (15,10),
+#             title = "Confusion matrix",
+#                 show = False, prefix = method +"_", save = False, return_cm = True
+#         );
+#         x = classification_report(aa,bb, output_dict = True, target_names = LABELS)
+#         joblib.dump(grid_result.best_estimator_ , f'{current_model}/models/gs_model_{method}.pkl')
+#         x["model_size"] = os.path.getsize(f'{current_model}/models/gs_model_{method}.pkl')
 
 
 
-        Results["test"][method] = pd.DataFrame.from_dict(x).T
-        ####display(Results["test"][method])
-        print("Val-Accuracy: ", grid_result.best_score_, grid_result.best_params_,)
-        CV_record = save_params_train_val_best(Results["train"][method], grid_result.best_params_, f'{current_model}/{method}.csv')
-        CV_record_all = pd.concat([CV_record_all, CV_record])
-        Results["test"][method].to_csv(f"{current_model}/test_results_{method}.csv")
+#         Results["test"][method] = pd.DataFrame.from_dict(x).T
+#         ####display(Results["test"][method])
+#         print("Val-Accuracy: ", grid_result.best_score_, grid_result.best_params_,)
+#         CV_record = save_params_train_val_best(Results["train"][method], grid_result.best_params_, f'{current_model}/{method}.csv')
+#         CV_record_all = pd.concat([CV_record_all, CV_record])
+#         Results["test"][method].to_csv(f"{current_model}/test_results_{method}.csv")
 
-except Exception as e:
-    print("ERROR:          ", e)
+# except Exception as e:
+#     print("ERROR:          ", e)
 # ## ------------------------------------------------------------------------------------------SVC
 try:
     method = "SVC"
@@ -1044,72 +1042,72 @@ except Exception as e:
 
 
 # ## ------------------------------------------------------------------------------------------Bagged Decision Trees
-try:
-    method = "Bagging"
-    if method in ALGORITHMS:
+# try:
+#     method = "Bagging"
+#     if method in ALGORITHMS:
 
-        model =  BaggingClassifier(random_state=42)
+#         model =  BaggingClassifier(random_state=42)
 
-        param_grid = dict(
-            Bagging__n_estimators = [25, 50, 75, 100, 200],
+#         param_grid = dict(
+#             Bagging__n_estimators = [25, 50, 75, 100, 200],
 
-                         )
-        param_grid = {} if DEBUG else param_grid
+#                          )
+#         param_grid = {} if DEBUG else param_grid
 
-        #-------------------------------------------------------------------
-        scaler = StandardScaler() 
-        model = Pipeline(steps=[("scaler", StandardScaler()),   ("Bagging", BaggingClassifier(random_state=42))])
+#         #-------------------------------------------------------------------
+#         scaler = StandardScaler() 
+#         model = Pipeline(steps=[("scaler", StandardScaler()),   ("Bagging", BaggingClassifier(random_state=42))])
 
-        grid = GridSearchCV(estimator=model, param_grid=param_grid, cv = CV,
-                           scoring = scoring,
-                            refit='accuracy',
-                            return_train_score=True,
-                            error_score="raise",
-                            verbose=2
-                           )
-        grid_result = grid.fit(X_train, y_train)
-        grid_result.cv_results_["algorithm"] = method
-        df = pd.DataFrame(grid_result.cv_results_)
-        df = df.sort_values(by=['mean_test_accuracy'], ascending=False).reset_index().round(4)
+#         grid = GridSearchCV(estimator=model, param_grid=param_grid, cv = CV,
+#                            scoring = scoring,
+#                             refit='accuracy',
+#                             return_train_score=True,
+#                             error_score="raise",
+#                             verbose=2
+#                            )
+#         grid_result = grid.fit(X_train, y_train)
+#         grid_result.cv_results_["algorithm"] = method
+#         df = pd.DataFrame(grid_result.cv_results_)
+#         df = df.sort_values(by=['mean_test_accuracy'], ascending=False).reset_index().round(4)
 
-        df = df.drop(['index', "mean_fit_time", "std_fit_time", "mean_score_time", "std_score_time"], axis=1)
-        # ####display(df)
-        Results["train"][method] = df
-        # df.to_csv("results.csv")
+#         df = df.drop(['index', "mean_fit_time", "std_fit_time", "mean_score_time", "std_score_time"], axis=1)
+#         # ####display(df)
+#         Results["train"][method] = df
+#         # df.to_csv("results.csv")
 
-        model = grid_result.best_estimator_ 
-        #------------------------------------------confusion matrix
-        y_pred = model.predict(X_test.astype('float32'))
+#         model = grid_result.best_estimator_ 
+#         #------------------------------------------confusion matrix
+#         y_pred = model.predict(X_test.astype('float32'))
 
-        aa = y_test#(np.argmax(y_test.values, axis = 0))
-        bb = y_pred#(np.argmax(y_pred, axis = 0))
+#         aa = y_test#(np.argmax(y_test.values, axis = 0))
+#         bb = y_pred#(np.argmax(y_pred, axis = 0))
 
-        # y_pred = y_pred.argmax(axis=1)
-        image_cm = mldl_uts.make_confusion_matrix(
-            y = aa,
-            y_pred = bb,
-        #         group_names = ['True Neg','False Pos','False Neg','True Pos'],
-            cmap = "gray",#"Greys",
-            categories = LABELS,
-            figsize = (15,10),
-            title = "Confusion matrix",
-                show = False, prefix = method +"_", save = False, return_cm = True
-        );
-        x = classification_report(aa,bb, output_dict = True, target_names = LABELS)
-        joblib.dump(grid_result.best_estimator_ , f'{current_model}/models/gs_model_{method}.pkl')
-        x["model_size"] = os.path.getsize(f'{current_model}/models/gs_model_{method}.pkl')
+#         # y_pred = y_pred.argmax(axis=1)
+#         image_cm = mldl_uts.make_confusion_matrix(
+#             y = aa,
+#             y_pred = bb,
+#         #         group_names = ['True Neg','False Pos','False Neg','True Pos'],
+#             cmap = "gray",#"Greys",
+#             categories = LABELS,
+#             figsize = (15,10),
+#             title = "Confusion matrix",
+#                 show = False, prefix = method +"_", save = False, return_cm = True
+#         );
+#         x = classification_report(aa,bb, output_dict = True, target_names = LABELS)
+#         joblib.dump(grid_result.best_estimator_ , f'{current_model}/models/gs_model_{method}.pkl')
+#         x["model_size"] = os.path.getsize(f'{current_model}/models/gs_model_{method}.pkl')
 
 
 
-        Results["test"][method] = pd.DataFrame.from_dict(x).T
-        ####display(Results["test"][method])
-        print("Val-Accuracy: ", grid_result.best_score_, grid_result.best_params_,)
-        CV_record = save_params_train_val_best(Results["train"][method], grid_result.best_params_, f'{current_model}/{method}.csv')
-        CV_record_all = pd.concat([CV_record_all, CV_record])
-        Results["test"][method].to_csv(f"{current_model}/test_results_{method}.csv")
+#         Results["test"][method] = pd.DataFrame.from_dict(x).T
+#         ####display(Results["test"][method])
+#         print("Val-Accuracy: ", grid_result.best_score_, grid_result.best_params_,)
+#         CV_record = save_params_train_val_best(Results["train"][method], grid_result.best_params_, f'{current_model}/{method}.csv')
+#         CV_record_all = pd.concat([CV_record_all, CV_record])
+#         Results["test"][method].to_csv(f"{current_model}/test_results_{method}.csv")
 
-except Exception as e:
-    print("ERROR:          ", e)
+# except Exception as e:
+#     print("ERROR:          ", e)
 
 
 
