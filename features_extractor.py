@@ -107,9 +107,7 @@ def extract_features(DATASET_FILE, n_mfcc,  kind, res_sig_size, features_folder)
 
 
     files = sorted(list(pathlib.Path(DATASET_FILE).rglob("*.wav")))
-    for i in tqdm(range(0,len(files),BATCH_SIZE)):
-        batch_files = files[i : i + BATCH_SIZE]
-        for f in batch_files:
+    for f in files:
             pathlib.Path(os.path.join(saveTo, f.parts[-2])).mkdir(parents=True, exist_ok=True)
             pathlib.Path(os.path.join(features_folder, "mfcc", f.parts[-2])).mkdir(parents=True, exist_ok=True)
             pathlib.Path(os.path.join(features_folder, "rms", f.parts[-2])).mkdir(parents=True, exist_ok=True)
