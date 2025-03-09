@@ -66,7 +66,7 @@ def load_data(path):
 
 
 
-    classes = [str(f.parent).split("\\")[-1] for f in audioFiles]
+    classes = [str(f.parent).split("/")[-1] for f in audioFiles]
     return audioFiles, classes
 
 
