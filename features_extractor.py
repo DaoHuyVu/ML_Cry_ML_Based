@@ -101,48 +101,48 @@ def generate_spectrogram(aud, Fs):
 
 
 def extract_features(DATASET_FILE, n_mfcc,  kind, res_sig_size, features_folder):
-    saveTo = f"{features_folder}/{alg}_dataset_{n_mfcc}_{res_sig_size}/"
+    # saveTo = f"{features_folder}/{alg}_dataset_{n_mfcc}_{res_sig_size}/"
     # pathlib.Path(saveTo).mkdir(parents=True, exist_ok=True)
 
 
     files = sorted(list(pathlib.Path(DATASET_FILE).rglob("*.wav")))
     for f in tqdm(files, total = len(files)):
-        pathlib.Path(os.path.join(saveTo, f.parts[-2])).mkdir(parents=True, exist_ok=True)
+        # pathlib.Path(os.path.join(saveTo, f.parts[-2])).mkdir(parents=True, exist_ok=True)
         pathlib.Path(os.path.join(features_folder, "mfcc", f.parts[-2])).mkdir(parents=True, exist_ok=True)
-        pathlib.Path(os.path.join(features_folder, "rms", f.parts[-2])).mkdir(parents=True, exist_ok=True)
-        pathlib.Path(os.path.join(features_folder, "mel_spectrogram", f.parts[-2])).mkdir(parents=True, exist_ok=True)
-        pathlib.Path(os.path.join(features_folder, "zcr", f.parts[-2])).mkdir(parents=True, exist_ok=True)
+        # pathlib.Path(os.path.join(features_folder, "rms", f.parts[-2])).mkdir(parents=True, exist_ok=True)
+        # pathlib.Path(os.path.join(features_folder, "mel_spectrogram", f.parts[-2])).mkdir(parents=True, exist_ok=True)
+        # pathlib.Path(os.path.join(features_folder, "zcr", f.parts[-2])).mkdir(parents=True, exist_ok=True)
 
         signal, sr = librosa.load(f, duration=5.0)
         
 
-        zcr = librosa.feature.zero_crossing_rate(signal, frame_length=2048, hop_length=512, center=True)
-        spectrogram = generate_spectrogram(signal, sr)
+        # zcr = librosa.feature.zero_crossing_rate(signal, frame_length=2048, hop_length=512, center=True)
+        # spectrogram = generate_spectrogram(signal, sr)
  
-        S, phase = librosa.magphase(librosa.stft(signal))
-        rms = librosa.feature.rms(S=S, frame_length=2048, hop_length=512, center=True, pad_mode='constant')
+        # S, phase = librosa.magphase(librosa.stft(signal))
+        # rms = librosa.feature.rms(S=S, frame_length=2048, hop_length=512, center=True, pad_mode='constant')
 
         normalized_mfcc_feature = audio_mfcc(signal, sr, n_mfcc = n_mfcc)
 
-        x = len(normalized_mfcc_feature) // res_sig_size
+        # x = len(normalized_mfcc_feature) // res_sig_size
 
-        img = timeSeriesToImage(normalized_mfcc_feature, size_x =  None, kind = kind, window_size = x)
-        cv2.imwrite(os.path.join(saveTo, f.parts[-2], f.stem + ".png"), img)
+        # img = timeSeriesToImage(normalized_mfcc_feature, size_x =  None, kind = kind, window_size = x)
+        # cv2.imwrite(os.path.join(saveTo, f.parts[-2], f.stem + ".png"), img)
         
-        spectrogram.savefig(os.path.join(features_folder, "mel_spectrogram", f.parts[-2], f.stem + ".png"))
+        # spectrogram.savefig(os.path.join(features_folder, "mel_spectrogram", f.parts[-2], f.stem + ".png"))
 
-        np.save(os.path.join(features_folder, "mfcc", f.parts[-2], f.stem + ".npy"), rms)
-        np.save(os.path.join(features_folder, "rms", f.parts[-2], f.stem + ".npy"), normalized_mfcc_feature)
+        np.save(os.path.join(features_folder, "mfcc", f.parts[-2], f.stem + ".npy"), normalized_mfcc_feature)
+        # np.save(os.path.join(features_folder, "rms", f.parts[-2], f.stem + ".npy"), rms)
         
 
-        np.save(os.path.join(features_folder, "zcr", f.parts[-2], f.stem + ".npy"), zcr)
+        # np.save(os.path.join(features_folder, "zcr", f.parts[-2], f.stem + ".npy"), zcr)
 
 import common
 if __name__ == "__main__":
     
 
-    for alg in tqdm(["GADF", "GASF", "MTF", "RP", "RGB_GAF", "GASF_MTF", "GADF_MTF"]):
-        extract_features(common.AUG_AUDIO_DATASET, 20, alg, 90, features_folder =  common.FEATURES_FOLDER)
+    # for alg in tqdm(["GADF", "GASF", "MTF", "RP", "RGB_GAF", "GASF_MTF", "GADF_MTF"]):
+        extract_features(common.AUG_AUDIO_DATASET, 20, "", 90, features_folder =  common.FEATURES_FOLDER)
 
 
 
