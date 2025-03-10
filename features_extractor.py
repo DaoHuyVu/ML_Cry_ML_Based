@@ -18,7 +18,6 @@ import tensorflow as tf
 import librosa
 import numpy as np
 import os
-BATCH_SIZE = 50
 def normalize(data):
     xmax, xmin =  data.max(), data.min()
     zi = 2 * ((data - xmin) / (xmax - xmin)) - 1
@@ -97,7 +96,6 @@ def generate_spectrogram(aud, Fs):
         fig, ax = plt.subplots(1,1, tight_layout = True, frameon=False, figsize = (2.56,2.56))
         powerSpectrum, frequenciesFound, time, imageAxis = plt.specgram(aud, Fs=Fs)
         plt.axis('off')
-        
         return fig
 
 
@@ -107,36 +105,36 @@ def extract_features(DATASET_FILE, n_mfcc,  kind, res_sig_size, features_folder)
 
 
     files = sorted(list(pathlib.Path(DATASET_FILE).rglob("*.wav")))
-    for f in files:
-            pathlib.Path(os.path.join(saveTo, f.parts[-2])).mkdir(parents=True, exist_ok=True)
-            pathlib.Path(os.path.join(features_folder, "mfcc", f.parts[-2])).mkdir(parents=True, exist_ok=True)
-            pathlib.Path(os.path.join(features_folder, "rms", f.parts[-2])).mkdir(parents=True, exist_ok=True)
-            pathlib.Path(os.path.join(features_folder, "mel_spectrogram", f.parts[-2])).mkdir(parents=True, exist_ok=True)
-            pathlib.Path(os.path.join(features_folder, "zcr", f.parts[-2])).mkdir(parents=True, exist_ok=True)
+    for f in tqdm(files, total = len(files)):
+        pathlib.Path(os.path.join(saveTo, f.parts[-2])).mkdir(parents=True, exist_ok=True)
+        pathlib.Path(os.path.join(features_folder, "mfcc", f.parts[-2])).mkdir(parents=True, exist_ok=True)
+        pathlib.Path(os.path.join(features_folder, "rms", f.parts[-2])).mkdir(parents=True, exist_ok=True)
+        pathlib.Path(os.path.join(features_folder, "mel_spectrogram", f.parts[-2])).mkdir(parents=True, exist_ok=True)
+        pathlib.Path(os.path.join(features_folder, "zcr", f.parts[-2])).mkdir(parents=True, exist_ok=True)
 
-            signal, sr = librosa.load(f, duration=5.0)
-            
+        signal, sr = librosa.load(f, duration=5.0)
+        
 
-            zcr = librosa.feature.zero_crossing_rate(signal, frame_length=2048, hop_length=512, center=True)
-            spectrogram = generate_spectrogram(signal, sr)
-    
-            S, phase = librosa.magphase(librosa.stft(signal))
-            rms = librosa.feature.rms(S=S, frame_length=2048, hop_length=512, center=True, pad_mode='constant')
+        zcr = librosa.feature.zero_crossing_rate(signal, frame_length=2048, hop_length=512, center=True)
+        spectrogram = generate_spectrogram(signal, sr)
+ 
+        S, phase = librosa.magphase(librosa.stft(signal))
+        rms = librosa.feature.rms(S=S, frame_length=2048, hop_length=512, center=True, pad_mode='constant')
 
-            normalized_mfcc_feature = audio_mfcc(signal, sr, n_mfcc = n_mfcc)
+        normalized_mfcc_feature = audio_mfcc(signal, sr, n_mfcc = n_mfcc)
 
-            x = len(normalized_mfcc_feature) // res_sig_size
+        x = len(normalized_mfcc_feature) // res_sig_size
 
-            img = timeSeriesToImage(normalized_mfcc_feature, size_x =  None, kind = kind, window_size = x)
-            cv2.imwrite(os.path.join(saveTo, f.parts[-2], f.stem + ".png"), img)
-            
-            spectrogram.savefig(os.path.join(features_folder, "mel_spectrogram", f.parts[-2], f.stem + ".png"))
+        img = timeSeriesToImage(normalized_mfcc_feature, size_x =  None, kind = kind, window_size = x)
+        cv2.imwrite(os.path.join(saveTo, f.parts[-2], f.stem + ".png"), img)
+        
+        spectrogram.savefig(os.path.join(features_folder, "mel_spectrogram", f.parts[-2], f.stem + ".png"))
 
-            np.save(os.path.join(features_folder, "mfcc", f.parts[-2], f.stem + ".npy"), rms)
-            np.save(os.path.join(features_folder, "rms", f.parts[-2], f.stem + ".npy"), normalized_mfcc_feature)
-            
+        np.save(os.path.join(features_folder, "mfcc", f.parts[-2], f.stem + ".npy"), rms)
+        np.save(os.path.join(features_folder, "rms", f.parts[-2], f.stem + ".npy"), normalized_mfcc_feature)
+        
 
-            np.save(os.path.join(features_folder, "zcr", f.parts[-2], f.stem + ".npy"), zcr)
+        np.save(os.path.join(features_folder, "zcr", f.parts[-2], f.stem + ".npy"), zcr)
 
 import common
 if __name__ == "__main__":
@@ -148,7 +146,6 @@ if __name__ == "__main__":
 
 
 # In[ ]:
-
 
 
 
