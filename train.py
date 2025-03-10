@@ -167,7 +167,7 @@ def readParametersFromCmd(read):
     else:
         features_name = "mfcc"
         ALGORITHMS = ["RF"]#"LR", "Ridge", "SVC", "KNN", "XGB", "DTC", "RF", "SGD"]
-        ALGORITHMS=["RF","LR","Ridge","SVC","KNN","XGB","DTC","RF","SGD","NB","MLP","Bagging"]
+        # ALGORITHMS=["RF","LR","Ridge","SVC","KNN","XGB","DTC","RF","SGD","NB","MLP","Bagging"]
         DEBUG = True
         CV = 2
         DATA_TYPE = "num"
@@ -560,74 +560,74 @@ scoring = {
 # # ## ------------------------------------------------------------------------------------------RandomForestClassifier
 
 
-# # try:
-# if 1:
-#     method = "RF"
-#     if method in ALGORITHMS:
+# try:
+if 1:
+    method = "RF"
+    if method in ALGORITHMS:
 
-#         model = RandomForestClassifier(criterion="entropy", class_weight = "balanced", random_state=42)
+        model = RandomForestClassifier(criterion="entropy", class_weight = "balanced", random_state=42)
 
-#         # solver  = ['liblinear', 'newton-cg', 'lbfgs', 'sag', 'saga']#'lbfgs', 'liblinear', 'newton-cg', 'newton-cholesky', 'sag', 'saga']   
+        # solver  = ['liblinear', 'newton-cg', 'lbfgs', 'sag', 'saga']#'lbfgs', 'liblinear', 'newton-cg', 'newton-cholesky', 'sag', 'saga']   
 
-#         param_grid = dict(
-#             RF__max_depth = range(1,21),
-#             RF__max_leaf_nodes = [50],
-#             RF__n_estimators = [10, 100, 200],
-#             RF__max_features = ['sqrt', 'log2'],
-#                          )
-#         param_grid = {} if DEBUG else param_grid
+        param_grid = dict(
+            RF__max_depth = range(1,21),
+            RF__max_leaf_nodes = [50],
+            RF__n_estimators = [10, 100, 200],
+            RF__max_features = ['sqrt', 'log2'],
+                         )
+        param_grid = {} if DEBUG else param_grid
 
-#         #-------------------------------------------------------------------
-#         scaler = StandardScaler() 
-#         model = Pipeline(steps=[("scaler", StandardScaler()),   ("RF", RandomForestClassifier(criterion="entropy", class_weight = "balanced", random_state=42))])
+        #-------------------------------------------------------------------
+        scaler = StandardScaler() 
+        model = Pipeline(steps=[("scaler", StandardScaler()),   ("RF", RandomForestClassifier(criterion="entropy", class_weight = "balanced", random_state=42))])
 
-#         grid = GridSearchCV(estimator=model, param_grid=param_grid, cv = CV,
-#                            scoring = scoring,
-#                             refit='accuracy',
-#                             return_train_score=True,
-#                             error_score="raise",
-#                             verbose=2
-#                            )
-#         grid_result = grid.fit(X_train, y_train)
-#         grid_result.cv_results_["algorithm"] = method
-#         df = pd.DataFrame(grid_result.cv_results_)
-#         df = df.sort_values(by=['mean_test_accuracy'], ascending=False).reset_index().round(4)
+        grid = GridSearchCV(estimator=model, param_grid=param_grid, cv = CV,
+                           scoring = scoring,
+                            refit='accuracy',
+                            return_train_score=True,
+                            error_score="raise",
+                            verbose=2
+                           )
+        grid_result = grid.fit(X_train, y_train)
+        grid_result.cv_results_["algorithm"] = method
+        df = pd.DataFrame(grid_result.cv_results_)
+        df = df.sort_values(by=['mean_test_accuracy'], ascending=False).reset_index().round(4)
 
-#         df = df.drop(['index', "mean_fit_time", "std_fit_time", "mean_score_time", "std_score_time"], axis=1)
-#         # ####display(df)
-#         Results["train"][method] = df
-#         # df.to_csv("results.csv")
+        df = df.drop(['index', "mean_fit_time", "std_fit_time", "mean_score_time", "std_score_time"], axis=1)
+        # ####display(df)
+        Results["train"][method] = df
+        # df.to_csv("results.csv")
 
-#         model = grid_result.best_estimator_ 
-#         #------------------------------------------confusion matrix
-#         y_pred = model.predict(X_test.astype('float32'))
+        model = grid_result.best_estimator_ 
+        #------------------------------------------confusion matrix
+        y_pred = model.predict(X_test.astype('float32'))
 
-#         # y_pred = y_pred.argmax(axis=1)
-#         image_cm = mldl_uts.make_confusion_matrix(
-#             y = y_test,#np.argmax(y_test, axis = 1),
-#             y_pred = y_pred,
-#         #         group_names = ['True Neg','False Pos','False Neg','True Pos'],
-#             cmap = "gray",#"Greys",
-#             categories = LABELS,
-#             figsize = (15,10),
-#             title = "Confusion matrix",
-#                 show = False, prefix = method +"_", save = False, return_cm = True
-#         );
-#         x = classification_report(y_test,y_pred, output_dict = True, target_names = LABELS)
-#         joblib.dump(grid_result.best_estimator_ , f'{current_model}/models/gs_model_{method}.pkl')
-#         x["model_size"] = os.path.getsize(f'{current_model}/models/gs_model_{method}.pkl')
+        # y_pred = y_pred.argmax(axis=1)
+        image_cm = mldl_uts.make_confusion_matrix(
+            y = y_test,#np.argmax(y_test, axis = 1),
+            y_pred = y_pred,
+        #         group_names = ['True Neg','False Pos','False Neg','True Pos'],
+            cmap = "gray",#"Greys",
+            categories = LABELS,
+            figsize = (15,10),
+            title = "Confusion matrix",
+                show = False, prefix = method +"_", save = False, return_cm = True
+        );
+        x = classification_report(y_test,y_pred, output_dict = True, target_names = LABELS)
+        joblib.dump(grid_result.best_estimator_ , f'{current_model}/models/gs_model_{method}.pkl')
+        x["model_size"] = os.path.getsize(f'{current_model}/models/gs_model_{method}.pkl')
 
-#         Results["test"][method] = pd.DataFrame.from_dict(x).T
-#         #######display(Results["test"][method])
-#         print("Val-Accuracy: ", grid_result.best_score_, grid_result.best_params_,)
-#         CV_record = save_params_train_val_best(Results["train"][method], grid_result.best_params_, f'{current_model}/{method}.csv')
-#         CV_record_all = pd.concat([CV_record_all, CV_record])
-#         Results["test"][method].to_csv(f"{current_model}/test_results_{method}.csv")
+        Results["test"][method] = pd.DataFrame.from_dict(x).T
+        #######display(Results["test"][method])
+        print("Val-Accuracy: ", grid_result.best_score_, grid_result.best_params_,)
+        CV_record = save_params_train_val_best(Results["train"][method], grid_result.best_params_, f'{current_model}/{method}.csv')
+        CV_record_all = pd.concat([CV_record_all, CV_record])
+        Results["test"][method].to_csv(f"{current_model}/test_results_{method}.csv")
 
-# # except Exception as e:
-# #     print("ERROR:          ", e)
+# except Exception as e:
+#     print("ERROR:          ", e)
 
-# # ## ------------------------------------------------------------------------------------------GaussianNB
+# ## ------------------------------------------------------------------------------------------GaussianNB
 
 
 # try:
