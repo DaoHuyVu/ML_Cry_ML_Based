@@ -97,7 +97,7 @@ def generate_spectrogram(aud, Fs):
         fig, ax = plt.subplots(1,1, tight_layout = True, frameon=False, figsize = (2.56,2.56))
         powerSpectrum, frequenciesFound, time, imageAxis = plt.specgram(aud, Fs=Fs)
         plt.axis('off')
-        plt.close(fig)
+        
         return fig
 
 
