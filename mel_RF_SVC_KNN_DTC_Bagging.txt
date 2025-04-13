@@ -1,0 +1,18 @@
+2025-03-11 08:24:45.394093: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+2025-03-11 08:24:46.961168: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+---------------------------------------------------------------------------------------------------- mfcc/ 	 images 	 ./Article/11_03_2025__08_24_56/mfcc/RF_SVC/
+case 2
+(0,) (0,) set()
+Traceback (most recent call last):
+  File "D:\SourceCode\Python\ML_Cry_ML_Based\train.py", line 265, in <module>
+    trainValIdx, testIdx = train_test_split(list(range(len(X))), test_size = 0.2, random_state = 42, shuffle=True, stratify = y)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\huyvu\miniconda3\envs\sk_pro\Lib\site-packages\sklearn\utils\_param_validation.py", line 216, in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\huyvu\miniconda3\envs\sk_pro\Lib\site-packages\sklearn\model_selection\_split.py", line 2851, in train_test_split
+    n_train, n_test = _validate_shuffle_split(
+                      ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\huyvu\miniconda3\envs\sk_pro\Lib\site-packages\sklearn\model_selection\_split.py", line 2481, in _validate_shuffle_split
+    raise ValueError(
+ValueError: With n_samples=0, test_size=0.2 and train_size=None, the resulting train set will be empty. Adjust any of the aforementioned parameters.

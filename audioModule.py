@@ -10,12 +10,14 @@ import numpy as np
 import soundfile as sf
 # install pydub for using HighPassFilter and play
 from pydub.playback import play
-from audiomentations import Compose, AddGaussianNoise, PitchShift, HighPassFilter
+from audiomentations import Compose, PitchShift, AddGaussianNoise, HighPassFilter, LowPassFilter, Mp3Compression
+from audiomentations import Padding, ClippingDistortion, TimeStretch, Gain
 # import simpleaudio as sa
 import matplotlib.pyplot as plt
 #from helper import _plot_signal_and_augmented_signal
 from IPython.display import Audio
 import librosa.display as dsp
+from random import randint, choices
 # import mir_eval
 import pandas as pd
 import torch
@@ -143,9 +145,14 @@ class audioPreprocessing:
         # Raw audio augmentation
         aug_transform = []
         aug_transform1 = [
-                AddGaussianNoise(min_amplitude=0.01, max_amplitude=0.015, p=1),
-                PitchShift(min_semitones=-2, max_semitones=2, p=1),
-                HighPassFilter(min_cutoff_freq=3000, max_cutoff_freq=4000, p=1)
+                PitchShift(min_semitones = -3, max_semitones = 3, p=1),
+                HighPassFilter(min_cutoff_freq= 700, max_cutoff_freq= 1100, p=0.25),
+                LowPassFilter(min_cutoff_freq= 2000, max_cutoff_freq= 2500, p=0.25),
+                Padding(mode= "silence", max_fraction= 0.3, pad_section= choices(["start", "end"], weights= [1, 1])[0] , p=0.25),
+                ClippingDistortion(max_percentile_threshold= randint(10, 20), p=0.4),
+                TimeStretch(min_rate=0.97, max_rate= 1.45, leave_length_unchanged= False, p=0.5),
+                Gain(min_gain_db=7, max_gain_db=10, p=1),
+                AddGaussianNoise(min_amplitude= 0.001, max_amplitude= 0.006, p=0.35)
             ]
         for j in i:
             aug_transform.append(aug_transform1[j])

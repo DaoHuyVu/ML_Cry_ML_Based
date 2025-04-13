@@ -1,0 +1,1 @@
+# nohup python train.py --FEATURE_NAME mel_spectrogram/  --ALGORITHMS [ANN] --DEBUG 0  --DATA_TYPE images --METHOD mel_spectrogram > mel.txt

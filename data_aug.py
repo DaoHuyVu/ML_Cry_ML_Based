@@ -66,7 +66,7 @@ def load_data(path):
 
 
 
-    classes = [str(f.parent).split("/")[-1] for f in audioFiles]
+    classes = [str(f.parent).split("\\")[-1] for f in audioFiles]
     return audioFiles, classes
 
 
@@ -104,7 +104,7 @@ def augment_data(audioFileNames, classes, save_path):
     print("before: ", len(audioFileNames))
     for idx, x in tqdm(enumerate(audioFileNames), total=len(audioFileNames)):
         signal_org = obj.readAudio(x)
-        cc = pathlib.Path(f"{save_path}//" + "//".join(str(x).split("/")[1:]))
+        cc = pathlib.Path(f"{save_path}//" + "//".join(str(x).split("\\")[1:]))
         path2save = os.path.join(cc.parent, cc.stem + cc.suffix)            
         pathlib.Path(pathlib.Path(path2save).parent).mkdir(parents=True, exist_ok=True)
 

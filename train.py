@@ -3,6 +3,9 @@
 
 # In[1]:
 
+import os
+os.environ["KERAS_BACKEND"] = "tensorflow"
+import keras
 
 import warnings
 warnings.filterwarnings('ignore')
@@ -10,34 +13,30 @@ warnings.filterwarnings('ignore')
 import numpy as np
 import os
 import tensorflow as tf
-
-
-from keras.layers import *
-from keras.models import *
 from time import time
-# import tensorflow_model_analysis as tfma
 
+# import tensorflow_model_analysis as tfma
 #from keras.wrappers.scikit_learn import KerasClassifier
 # from sklearn.grid_search import GridSearchCV,RandomizedSearchCV
 
 
-from sklearn.model_selection import RandomizedSearchCV
-from sklearn.model_selection import GridSearchCV
+# from sklearn.model_selection import RandomizedSearchCV
+# from sklearn.model_selection import GridSearchCV
+from sklearn.preprocessing import OneHotEncoder
 from sklearn.model_selection import train_test_split
-import keras.backend as K
 import warnings
 warnings.filterwarnings('ignore')
 import numpy as np
 import pandas as pd
 import os, sys
-from xgboost import XGBClassifier
-from sklearn.linear_model import LogisticRegression
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.svm import SVC
-from sklearn.naive_bayes import GaussianNB
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.neural_network import MLPClassifier
+# from xgboost import XGBClassifier
+# from sklearn.linear_model import LogisticRegression
+# from sklearn.neighbors import KNeighborsClassifier
+# from sklearn.svm import SVC
+# from sklearn.naive_bayes import GaussianNB
+# from sklearn.tree import DecisionTreeClassifier
+# from sklearn.ensemble import RandomForestClassifier
+# from sklearn.neural_network import MLPClassifier
 
 
 from sklearn.metrics import accuracy_score
@@ -45,14 +44,14 @@ import numpy as np
 import pandas as pd
 import seaborn as sb
 from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LogisticRegression
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.naive_bayes import GaussianNB
-from sklearn.neural_network import MLPClassifier
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.ensemble import BaggingClassifier
-from sklearn.linear_model import RidgeClassifier
-from sklearn.ensemble import GradientBoostingClassifier, GradientBoostingRegressor
+# from sklearn.linear_model import LogisticRegression
+# from sklearn.tree import DecisionTreeClassifier
+# from sklearn.naive_bayes import GaussianNB
+# from sklearn.neural_network import MLPClassifier
+# from sklearn.neighbors import KNeighborsClassifier
+# from sklearn.ensemble import BaggingClassifier
+# from sklearn.linear_model import RidgeClassifier
+# from sklearn.ensemble import GradientBoostingClassifier, GradientBoostingRegressor
 
 from sklearn.metrics import precision_score, recall_score, roc_auc_score, make_scorer, accuracy_score,classification_report, confusion_matrix
 import matplotlib.pyplot as plt
@@ -64,20 +63,14 @@ from sklearn.metrics import roc_auc_score,  accuracy_score,precision_recall_curv
 import datetime
 import joblib
 import pathlib
-from tensorflow.keras.applications.inception_v3 import InceptionV3
-from tensorflow.keras.applications import EfficientNetB0
 
-
-from tensorflow.keras.preprocessing import image
-from tensorflow.keras.models import Model
-from tensorflow.keras.layers import Dense, GlobalAveragePooling2D
+from keras._tf_keras.keras.preprocessing import image
 # from pactools.grid_search import GridSearchCVProgressBar
 
 # get_ipython().run_line_magic('matplotlib', 'inline')
 from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import Pipeline
 from sklearn.decomposition import PCA
-
 # In[2]:
 
 
@@ -182,11 +175,11 @@ def load_images(features_folder, subfolder):
     # print(list(pathlib.Path(f"{features_folder}/{subfolder}").rglob("*.png")))
     for file in list(pathlib.Path(f"{features_folder}/{subfolder}").rglob("*.png")):
         tmp2 = str(file.parent.stem)#.split("\\")[-1]
-        img = image.load_img(file, target_size=(216, 216))
+        img = image.load_img(file, target_size=(224, 224,3))
         x = image.img_to_array(img)
-        X.append(x.flatten())
+        X.append(x)
         y.append(tmp2)
-    X = np.array(X)
+    X = np.array(X).astype("float32")/255.0
     y = np.array(y)
     LABELS = set(y)
     print(X.shape, y.shape, LABELS)
@@ -210,14 +203,14 @@ def load_np_files(features_folder):
 
 readParametersFromCmd(True)
 # features_name = "mfcc"
-features_folder = f"./features/{features_name}"
+features_folder = f"./features/{features_name}" 
 
 current_model = datetime.datetime.now().strftime("%d_%m_%Y__%H_%M_%S")
 t= "_".join(ALGORITHMS)
 current_model = f"{common.ARTICLE_RESULTS}/{current_model}/{features_name}{t}/"
-pathlib.Path(f'{current_model}/').mkdir(parents=True, exist_ok=True)#metrics
-pathlib.Path(f'{current_model}/models').mkdir(parents=True, exist_ok=True)#metrics
-pathlib.Path(f'{current_model}/train').mkdir(parents=True, exist_ok=True)#metrics
+# pathlib.Path(f'{current_model}/').mkdir(parents=True, exist_ok=True)#metrics
+# pathlib.Path(f'{current_model}/models').mkdir(parents=True, exist_ok=True)#metrics
+# pathlib.Path(f'{current_model}/train').mkdir(parents=True, exist_ok=True)#metrics
 
 mldl_uts.setDir(current_model)
 
@@ -262,20 +255,12 @@ elif DATA_TYPE == 'images':
     print("case 2")
     X, y, LABELS = load_images(common.FEATURES_FOLDER, METHOD)
     seeding(42)
-    trainValIdx, testIdx = train_test_split(list(range(len(X))), test_size = 0.2, random_state = 42, shuffle=True, stratify = y)
-    print("train + val data size: ", len(trainValIdx))
-    print("test data size: ", len(testIdx))
-    LABELS =['belly_pain', 'burping', 'discomfort', 'hungry', 'tired']
-
-    X_train = X[trainValIdx]
-    X_test = X[testIdx]
-
-    y_train = y[trainValIdx]
-    y_test = y[testIdx]
-
-    y_train_enc = pd.get_dummies(y_train).values
-
-
+    X_train, X_test, y_train, y_test = train_test_split(X,y, test_size = 0.2, random_state = 42, stratify = y)
+    LABELS =['belly_pain', 'burping', 'discomfort', 'hungry', 'tired']    
+    y_train = np.array(y_train).reshape(-1, 1)  # Reshape (1939,) to (1939, 1)      
+    encoder = OneHotEncoder(categories=[LABELS], sparse_output=False, handle_unknown='ignore')
+    y_train_enc = encoder.fit_transform(y_train)
+    
 
 
 #----------------------------------------------------------------------------EDA
@@ -561,68 +546,68 @@ scoring = {
 
 
 # try:
-if 1:
-    method = "RF"
-    if method in ALGORITHMS:
+# if 1:
+#     method = "RF"
+#     if method in ALGORITHMS:
 
-        model = RandomForestClassifier(criterion="entropy", class_weight = "balanced", random_state=42)
+#         model = RandomForestClassifier(criterion="entropy", class_weight = "balanced", random_state=42)
 
-        # solver  = ['liblinear', 'newton-cg', 'lbfgs', 'sag', 'saga']#'lbfgs', 'liblinear', 'newton-cg', 'newton-cholesky', 'sag', 'saga']   
+#         # solver  = ['liblinear', 'newton-cg', 'lbfgs', 'sag', 'saga']#'lbfgs', 'liblinear', 'newton-cg', 'newton-cholesky', 'sag', 'saga']   
 
-        param_grid = dict(
-            RF__max_depth = range(1,21),
-            RF__max_leaf_nodes = [50],
-            RF__n_estimators = [10, 100, 200],
-            RF__max_features = ['sqrt', 'log2'],
-                         )
-        param_grid = {} if DEBUG else param_grid
+#         param_grid = dict(
+#             RF__max_depth = range(1,21),
+#             RF__max_leaf_nodes = [50],
+#             RF__n_estimators = [10, 100, 200],
+#             RF__max_features = ['sqrt', 'log2'],
+#                          )
+#         param_grid = {} if DEBUG else param_grid
 
-        #-------------------------------------------------------------------
-        scaler = StandardScaler() 
-        model = Pipeline(steps=[("scaler", StandardScaler()),   ("RF", RandomForestClassifier(criterion="entropy", class_weight = "balanced", random_state=42))])
+#         #-------------------------------------------------------------------
+#         scaler = StandardScaler() 
+#         model = Pipeline(steps=[("scaler", StandardScaler()),   ("RF", RandomForestClassifier(criterion="entropy", class_weight = "balanced", random_state=42))])
 
-        grid = GridSearchCV(estimator=model, param_grid=param_grid, cv = CV,
-                           scoring = scoring,
-                            refit='accuracy',
-                            return_train_score=True,
-                            error_score="raise",
-                            verbose=2
-                           )
-        grid_result = grid.fit(X_train, y_train)
-        grid_result.cv_results_["algorithm"] = method
-        df = pd.DataFrame(grid_result.cv_results_)
-        df = df.sort_values(by=['mean_test_accuracy'], ascending=False).reset_index().round(4)
+#         grid = GridSearchCV(estimator=model, param_grid=param_grid, cv = CV,
+#                            scoring = scoring,
+#                             refit='accuracy',
+#                             return_train_score=True,
+#                             error_score="raise",
+#                             verbose=2
+#                            )
+#         grid_result = grid.fit(X_train, y_train)
+#         grid_result.cv_results_["algorithm"] = method
+#         df = pd.DataFrame(grid_result.cv_results_)
+#         df = df.sort_values(by=['mean_test_accuracy'], ascending=False).reset_index().round(4)
 
-        df = df.drop(['index', "mean_fit_time", "std_fit_time", "mean_score_time", "std_score_time"], axis=1)
-        # ####display(df)
-        Results["train"][method] = df
-        # df.to_csv("results.csv")
+#         df = df.drop(['index', "mean_fit_time", "std_fit_time", "mean_score_time", "std_score_time"], axis=1)
+#         # ####display(df)
+#         Results["train"][method] = df
+#         # df.to_csv("results.csv")
 
-        model = grid_result.best_estimator_ 
-        #------------------------------------------confusion matrix
-        y_pred = model.predict(X_test.astype('float32'))
+#         model = grid_result.best_estimator_ 
+#         #------------------------------------------confusion matrix
+#         y_pred = model.predict(X_test.astype('float32'))
 
-        # y_pred = y_pred.argmax(axis=1)
-        image_cm = mldl_uts.make_confusion_matrix(
-            y = y_test,#np.argmax(y_test, axis = 1),
-            y_pred = y_pred,
-        #         group_names = ['True Neg','False Pos','False Neg','True Pos'],
-            cmap = "gray",#"Greys",
-            categories = LABELS,
-            figsize = (15,10),
-            title = "Confusion matrix",
-                show = False, prefix = method +"_", save = False, return_cm = True
-        );
-        x = classification_report(y_test,y_pred, output_dict = True, target_names = LABELS)
-        joblib.dump(grid_result.best_estimator_ , f'{current_model}/models/gs_model_{method}.pkl')
-        x["model_size"] = os.path.getsize(f'{current_model}/models/gs_model_{method}.pkl')
+#         # y_pred = y_pred.argmax(axis=1)
+#         image_cm = mldl_uts.make_confusion_matrix(
+#             y = y_test,#np.argmax(y_test, axis = 1),
+#             y_pred = y_pred,
+#         #         group_names = ['True Neg','False Pos','False Neg','True Pos'],
+#             cmap = "gray",#"Greys",
+#             categories = LABELS,
+#             figsize = (15,10),
+#             title = "Confusion matrix",
+#                 show = False, prefix = method +"_", save = False, return_cm = True
+#         );
+#         x = classification_report(y_test,y_pred, output_dict = True, target_names = LABELS)
+#         joblib.dump(grid_result.best_estimator_ , f'{current_model}/models/gs_model_{method}.pkl')
+#         x["model_size"] = os.path.getsize(f'{current_model}/models/gs_model_{method}.pkl')
 
-        Results["test"][method] = pd.DataFrame.from_dict(x).T
-        #######display(Results["test"][method])
-        print("Val-Accuracy: ", grid_result.best_score_, grid_result.best_params_,)
-        CV_record = save_params_train_val_best(Results["train"][method], grid_result.best_params_, f'{current_model}/{method}.csv')
-        CV_record_all = pd.concat([CV_record_all, CV_record])
-        Results["test"][method].to_csv(f"{current_model}/test_results_{method}.csv")
+#         Results["test"][method] = pd.DataFrame.from_dict(x).T
+#         #######display(Results["test"][method])
+#         print("Val-Accuracy: ", grid_result.best_score_, grid_result.best_params_,)
+#         CV_record = save_params_train_val_best(Results["train"][method], grid_result.best_params_, f'{current_model}/{method}.csv')
+#         CV_record_all = pd.concat([CV_record_all, CV_record])
+#         Results["test"][method].to_csv(f"{current_model}/test_results_{method}.csv")
 
 # except Exception as e:
 #     print("ERROR:          ", e)
@@ -970,75 +955,75 @@ if 1:
 # except Exception as e:
 #     print("ERROR:          ", e)
 # ## ------------------------------------------------------------------------------------------SVC
-try:
-    method = "SVC"
-    if method in ALGORITHMS:
+# try:
+#     method = "SVC"
+#     if method in ALGORITHMS:
 
-        model =  SVC(class_weight = 'balanced', random_state = 42)
+#         model =  SVC(class_weight = 'balanced', random_state = 42)
 
-        param_grid = dict(
-            SVC__kernel = ['linear'],#', 'poly', 'rbf', 'sigmoid'],#precomputed
-            SVC__degree=[5, 7, 8, 9],
-            SVC__C= [0.001, 0.1,1, 10, 100],
-            SVC__gamma = [1,0.1,0.01,0.001],
-                         )
-        param_grid = {} if DEBUG else param_grid
+#         param_grid = dict(
+#             SVC__kernel = ['linear'],#', 'poly', 'rbf', 'sigmoid'],#precomputed
+#             SVC__degree=[5, 7, 8, 9],
+#             SVC__C= [0.001, 0.1,1, 10, 100],
+#             SVC__gamma = [1,0.1,0.01,0.001],
+#                          )
+#         param_grid = {} if DEBUG else param_grid
 
-        #-------------------------------------------------------------------
-        scaler = StandardScaler() 
-        model = Pipeline(steps=[("scaler", StandardScaler()),   ("SVC", SVC(class_weight = 'balanced', random_state = 42))])
+#         #-------------------------------------------------------------------
+#         scaler = StandardScaler() 
+#         model = Pipeline(steps=[("scaler", StandardScaler()),   ("SVC", SVC(class_weight = 'balanced', random_state = 42))])
 
-        grid = GridSearchCV(estimator=model, param_grid=param_grid, cv = CV,
-                           scoring = scoring,
-                            refit='accuracy',
-                            return_train_score=True,
-                            error_score="raise",
-                            verbose=2
-                           )
-        grid_result = grid.fit(X_train, y_train)
-        grid_result.cv_results_["algorithm"] = method
-        df = pd.DataFrame(grid_result.cv_results_)
-        df = df.sort_values(by=['mean_test_accuracy'], ascending=False).reset_index().round(4)
+#         grid = GridSearchCV(estimator=model, param_grid=param_grid, cv = CV,
+#                            scoring = scoring,
+#                             refit='accuracy',
+#                             return_train_score=True,
+#                             error_score="raise",
+#                             verbose=2
+#                            )
+#         grid_result = grid.fit(X_train, y_train)
+#         grid_result.cv_results_["algorithm"] = method
+#         df = pd.DataFrame(grid_result.cv_results_)
+#         df = df.sort_values(by=['mean_test_accuracy'], ascending=False).reset_index().round(4)
 
-        df = df.drop(['index', "mean_fit_time", "std_fit_time", "mean_score_time", "std_score_time"], axis=1)
-        # ####display(df)
-        Results["train"][method] = df
-        # df.to_csv("results.csv")
+#         df = df.drop(['index', "mean_fit_time", "std_fit_time", "mean_score_time", "std_score_time"], axis=1)
+#         # ####display(df)
+#         Results["train"][method] = df
+#         # df.to_csv("results.csv")
 
-        model = grid_result.best_estimator_ 
-        #------------------------------------------confusion matrix
-        y_pred = model.predict(X_test.astype('float32'))
+#         model = grid_result.best_estimator_ 
+#         #------------------------------------------confusion matrix
+#         y_pred = model.predict(X_test.astype('float32'))
 
-        aa = y_test#(np.argmax(y_test.values, axis = 0))
-        bb = y_pred#(np.argmax(y_pred, axis = 0))
+#         aa = y_test#(np.argmax(y_test.values, axis = 0))
+#         bb = y_pred#(np.argmax(y_pred, axis = 0))
 
-        # y_pred = y_pred.argmax(axis=1)
-        image_cm = mldl_uts.make_confusion_matrix(
-            y = aa,
-            y_pred = bb,
-        #         group_names = ['True Neg','False Pos','False Neg','True Pos'],
-            cmap = "gray",#"Greys",
-            categories = LABELS,
-            figsize = (15,10),
-            title = "Confusion matrix",
-                show = False, prefix = method +"_", save = False, return_cm = True
-        );
-        x = classification_report(aa,bb, output_dict = True, target_names = LABELS)
-        joblib.dump(grid_result.best_estimator_ , f'{current_model}/models/gs_model_{method}.pkl')
-        x["model_size"] = os.path.getsize(f'{current_model}/models/gs_model_{method}.pkl')
-
-
+#         # y_pred = y_pred.argmax(axis=1)
+#         image_cm = mldl_uts.make_confusion_matrix(
+#             y = aa,
+#             y_pred = bb,
+#         #         group_names = ['True Neg','False Pos','False Neg','True Pos'],
+#             cmap = "gray",#"Greys",
+#             categories = LABELS,
+#             figsize = (15,10),
+#             title = "Confusion matrix",
+#                 show = False, prefix = method +"_", save = False, return_cm = True
+#         );
+#         x = classification_report(aa,bb, output_dict = True, target_names = LABELS)
+#         joblib.dump(grid_result.best_estimator_ , f'{current_model}/models/gs_model_{method}.pkl')
+#         x["model_size"] = os.path.getsize(f'{current_model}/models/gs_model_{method}.pkl')
 
 
-        Results["test"][method] = pd.DataFrame.from_dict(x).T
-        ####display(Results["test"][method])
-        print("Val-Accuracy: ", grid_result.best_score_, grid_result.best_params_,)
-        CV_record = save_params_train_val_best(Results["train"][method], grid_result.best_params_, f'{current_model}/{method}.csv')
-        CV_record_all = pd.concat([CV_record_all, CV_record])
-        Results["test"][method].to_csv(f"{current_model}/test_results_{method}.csv")
 
-except Exception as e:
-    print("ERROR:          ", e)
+
+#         Results["test"][method] = pd.DataFrame.from_dict(x).T
+#         ####display(Results["test"][method])
+#         print("Val-Accuracy: ", grid_result.best_score_, grid_result.best_params_,)
+#         CV_record = save_params_train_val_best(Results["train"][method], grid_result.best_params_, f'{current_model}/{method}.csv')
+#         CV_record_all = pd.concat([CV_record_all, CV_record])
+#         Results["test"][method].to_csv(f"{current_model}/test_results_{method}.csv")
+
+# except Exception as e:
+#     print("ERROR:          ", e)
 
 
 # ## ------------------------------------------------------------------------------------------Bagged Decision Trees
@@ -1118,33 +1103,6 @@ except Exception as e:
 
 # def f1(y_true, y_pred):
 
-
-# def get_hp():
-#     batches = [10, 20, 40, 60, 80, 100]
-#     batches = [16, 32]
-#     # epochs = [10, 50, 100]
-#     # epochs = [25, 50, 100]#100, 200]
-#     epochs = [30, 50, 100]
-#     optimizers = ['SGD', 'Adam', 'RMSprop']#, 'Adagrad', 'Adadelta', 'Adamax', 'Nadam']
-# #     optimizers = ['Adam']
-#     learning_rate = [0.01]
-# #     learning_rate = [0.01]
-#     # momentum1 = [0.0, 0.2, 0.4, 0.6, 0.8, 0.9]
-#     # init = ['uniform', 'lecun_uniform', 'normal', 'zero', 'glorot_normal', 'glorot_uniform', 'he_normal', 'he_uniform']
-#     init = ['uniform']
-
-#     # activation = ['softmax', 'softplus', 'softsign', 'relu', 'tanh', 'sigmoid', 'hard_sigmoid', 'linear']
-#     # dropout_rate = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
-#     # neurons = [25, 30]
-#     param_grid = dict(optimizer=optimizers, nb_epoch=epochs, batch_size=batches, learning_rate = learning_rate)
-#     param_grid = dict(model__optimizer=optimizers, 
-#                       optimizer__learning_rate=learning_rate,
-#                      model__epochs = epochs,
-#                      model__loss = ['categorical_crossentropy']
-#                      )
-#     return param_grid
-
-
 # def create_model(epochs, optimizer, loss):
 #     model = Sequential()
 #     model.add(Dense(512, input_shape=(216,)))
@@ -1180,135 +1138,122 @@ except Exception as e:
 #                  #          ],
 #                  # ) 
 #     return model
+def create_model():
+    base_model = keras.applications.MobileNetV3Small(
+        input_shape=(224, 224, 3),
+        include_top=False,
+        weights=None,
+        include_preprocessing=True
+    )
+    base_model.trainable = True 
 
+    inputs = keras.Input(shape=(224, 224, 3))
+    x = base_model(inputs, training=True)
+    x = keras.layers.GlobalAveragePooling2D()(x)
+    x = keras.layers.Dropout(0.2)(x)
+    outputs = keras.layers.Dense(5, activation="softmax")(x)
 
-# def create_model1(epochs, optimizer):#, learning_rate = 0.001, neurons=50, is_compile = True, epochs = 1):
-#     classes_num =5
+    model = keras.Model(inputs, outputs)
+    model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+    return model
+# def get_hp():
+#     param_grid = {
+#         "optimizer": ["RMSprop"],
+#         "optimizer__learning_rate": [0.01],
+#         "epochs": [30],
+#         "batch_size": [32],
+#         "loss": ["categorical_crossentropy"]
+#     }
+#     return param_grid
+try:
+    method = "ANN"
+    if method in ALGORITHMS:
 
-#     model = Sequential()
-#     model.add(Dense(256, input_shape=(216,)))
-#     model.add(Activation('relu')) # An "activation" is just a non-linear function applied to the output
-#     model.add(Dropout(0.2))   # Dropout helps protect the model from memorizing or "overfitting" the training data
-# #     model.add(Dense(128))
-# #     model.add(Activation('relu'))
-#     model.add(Dense(512))
-#     model.add(Activation('relu'))
-#     model.add(Dropout(0.2))
-#     model.add(Dense(256))
-#     model.add(Activation('relu'))
-#     model.add(Dropout(0.2))
-#     model.add(Dense(classes_num))
-#     model.add(Activation('softmax')) # This special "softmax" a
-#     model.compile(loss='categorical_crossentropy')
-# #     if is_compile is False:
-# #         return model
-# #     model.compile(loss='categorical_crossentropy', optimizer=optimizer, #binary_crossentropy
-# #                   metrics=[
-# #                       'accuracy',
-# # #                            tf.keras.metrics.TruePositives(),
-# # #                            tf.keras.metrics.TrueNegatives(),
-# # #                            tf.keras.metrics.FalsePositives(),
-# # #                            tf.keras.metrics.FalseNegatives(),
-# # #                            tfa.metrics.F1Score(name = "f1_weighted", num_classes=10, average='weighted',threshold=0.5),
-# # #                            tfa.metrics.F1Score(name = "f1_micro", num_classes=10, average='micro', threshold=0.5),
-# # #                            tfa.metrics.F1Score(name = "f1_macro", num_classes=10, average='macro', threshold=0.5),
-# # #                            specificity,
-# # #                            tf.keras.metrics.Precision(),
-# # #                            tf.keras.metrics.Recall(),
-# # #                            tf.keras.metrics.AUC(curve = 'ROC'),
-# # #                            tf.keras.metrics.AUC(curve = 'PR')
-# #                           ],
-# #                  ) 
-#     return model
+        seeding(42)
+        seed = 42 # can be any number, and the exact value does not matter
+        np.random.seed(seed)
 
-# # In[27]:
+        nb_classes = len(LABELS)
+        current_time = datetime.datetime.now().strftime("%Y_%m_%d-%H_%M_%S")
+        log_dir = "logs/hparam_tuning/" + current_time
+        start= time()
 
-# try:
-#     method = "ANN"
-#     if method in ALGORITHMS:
-
-#         seeding(42)
-#         seed = 42 # can be any number, and the exact value does not matter
-#         np.random.seed(seed)
-
-#         nb_classes = len(LABELS)
-#         current_time = datetime.datetime.now().strftime("%Y_%m_%d-%H_%M_%S")
-#         log_dir = "logs/hparam_tuning/" + current_time
-#         start= time()
-
-#         model = KerasClassifier(model=create_model,verbose=2, random_state = 42, shuffle=False)
-
-#         param_grid  = get_hp()
-#         print(param_grid)
-#         #-------------------------------------------------------------------
-#         # model = create_model()
+        # model = KerasClassifier(model=create_model, verbose=1)
+        # param_grid  = get_hp()
+        # print(param_grid)
+        # #-------------------------------------------------------------------
+        # # model = create_model()
 
 
 
-#         grid = GridSearchCV(estimator=model, param_grid=param_grid , cv = CV,
-#                            scoring = scoring,
-#                             refit='accuracy',
-#                             return_train_score=True,
-#                             error_score="raise", 
-#                            )
-#         grid_result = grid.fit(X_train.values, y_train_enc.values, shuffle=False, callbacks = [tf.keras.callbacks.EarlyStopping(monitor='loss', patience=3)])
-#         grid_result.cv_results_["algorithm"] = method
-#         df = pd.DataFrame(grid_result.cv_results_)
-#         df = df.sort_values(by=['mean_test_accuracy'], ascending=True).reset_index().round(4)
+        # grid = GridSearchCV(estimator=model, param_grid=param_grid , cv = CV,
+        #                    scoring = scoring,
+        #                     refit='accuracy',
+        #                     return_train_score=True,
+        #                     error_score="raise", 
+        #                    )
+        # grid_result = grid.fit(X_train, y_train_enc, shuffle=False, callbacks = [tf.keras.callbacks.EarlyStopping(monitor='loss', patience=3)])
+        # grid_result.cv_results_["algorithm"] = method
+        # df = pd.DataFrame(grid_result.cv_results_)
+        # df = df.sort_values(by=['mean_test_accuracy'], ascending=True).reset_index().round(4)
 
-#         df = df.drop(['index', "mean_fit_time", "std_fit_time", "mean_score_time", "std_score_time"], axis=1)
-#         # ####display(df)
-#         Results["train"][method] = df
-#         # df.to_csv("results.csv")
+        # df = df.drop(['index', "mean_fit_time", "std_fit_time", "mean_score_time", "std_score_time"], axis=1)
+        # # ####display(df)
+        # Results["train"][method] = df
+        # # df.to_csv("results.csv")
 
-#         model = grid_result.best_estimator_ 
-#         #------------------------------------------confusion matrix
+        # model = grid_result.best_estimator_ 
+        #------------------------------------------confusion matrix
+
+        model = create_model()
+        model.fit(X_train,y_train_enc,batch_size=32,epochs=30)
+        y_pred_enc = model.predict(X_test)
+        
+        y_pred = encoder.inverse_transform(y_pred_enc)
+        print("Accuracy:", accuracy_score(y_test, y_pred))
+        model.save_weights('model.weights.h5')
+        model.save("keras_model.keras")
+        # aa = pd.from_dummies(y_test_enc).values
+
+        # bb = (np.argmax(y_pred, axis = 1))
+        # bb = [LABELS[e] for e in bb]
+        # # print(aa.shape)
+        # aa = aa.flatten()
+        # bb = np.array(bb).flatten()
+
+        # print(aa, bb)
+        # print(aa.shape, bb.shape)
+
+        # print(bb.shape[0])
+        # for i in range(bb.shape[0]):
+        #     aa[i] = LABELS.index(aa[i])
+        #     bb[i] = LABELS.index(bb[i])
 
 
-#         y_pred = model.predict(X_test.astype('float32'))
 
+        # image_cm = mldl_uts.make_confusion_matrix(
+        #     y = aa,#np.argmax(y_test, axis = 1),
+        #     y_pred = bb,
+        # #         group_names = ['True Neg','False Pos','False Neg','True Pos'],
+        #     cmap = "gray",#"Greys",
+        #     categories = LABELS,
+        #     figsize = (15,10),
+        #     title = "Confusion matrix",
+        #         show = False, prefix = method +"_", save = False, return_cm = True
+        # )
+        # x = classification_report(aa,bb, output_dict = True, target_names = LABELS)
+        # joblib.dump(grid_result.best_estimator_ , f'{common.ARTICLE_RESULTS}/gs_model_{method}.pkl')
+        # x["model_size"] = os.path.getsize(f'{common.ARTICLE_RESULTS}/gs_model_{method}.pkl')
 
-#         aa = pd.from_dummies(y_test_enc).values
-
-#         bb = (np.argmax(y_pred, axis = 1))
-#         bb = [LABELS[e] for e in bb]
-#         # print(aa.shape)
-#         aa = aa.flatten()
-#         bb = np.array(bb).flatten()
-
-#         # print(aa, bb)
-#         # print(aa.shape, bb.shape)
-
-#         # print(bb.shape[0])
-#         # for i in range(bb.shape[0]):
-#         #     aa[i] = LABELS.index(aa[i])
-#         #     bb[i] = LABELS.index(bb[i])
-
-
-
-#         image_cm = mldl_uts.make_confusion_matrix(
-#             y = aa,#np.argmax(y_test, axis = 1),
-#             y_pred = bb,
-#         #         group_names = ['True Neg','False Pos','False Neg','True Pos'],
-#             cmap = "gray",#"Greys",
-#             categories = LABELS,
-#             figsize = (15,10),
-#             title = "Confusion matrix",
-#                 show = False, prefix = method +"_", save = False, return_cm = True
-#         );
-#         x = classification_report(aa,bb, output_dict = True, target_names = LABELS)
-#         joblib.dump(grid_result.best_estimator_ , f'{common.ARTICLE_RESULTS}/gs_model_{method}.pkl')
-#         x["model_size"] = os.path.getsize(f'{common.ARTICLE_RESULTS}/gs_model_{method}.pkl')
-
-#         Results["test"][method] = pd.DataFrame.from_dict(x).T
-#         ####display(Results["test"][method])
-#         print("Val-Accuracy: ", grid_result.best_score_, grid_result.best_params_,)
-#         CV_record = save_params_train_val_best(Results["train"][method], grid_result.best_params_, f'{current_model}/{method}.csv')
-#         CV_record_all = pd.concat([CV_record_all, CV_record])
+        # Results["test"][method] = pd.DataFrame.from_dict(x).T
+        # ####display(Results["test"][method])
+        # print("Val-Accuracy: ", grid_result.best_score_, grid_result.best_params_,)
+        # CV_record = save_params_train_val_best(Results["train"][method], grid_result.best_params_, f'{current_model}/{method}.csv')
+        # CV_record_all = pd.concat([CV_record_all, CV_record])
         # Results["test"][method].to_csv(f"{current_model}/test_results_{method}.csv")
 
-# except Exception as e:
-#     print("ERROR:          ", e)
+except Exception as e:
+    print("ERROR:          ", e)
 
 # # In[28]:
 
@@ -1343,82 +1288,82 @@ except Exception as e:
 
 
 
-wanted = ['params', 'mean_test_accuracy', 'std_test_accuracy','mean_train_accuracy', 'std_train_accuracy',
-       'algorithm']
-train_results_df = pd.DataFrame()
-for experiment in Results["train"].keys():
-    train_table = Results["train"][experiment]
-#     train_table = test_table.rename(columns= {col_name: experiment + "_" + col_name for col_name in train_table.columns})
-    train_table.to_csv(f"{current_model}/train/train_results_{experiment}.csv")
-    tmp = train_table[wanted]
-    train_results_df = pd.concat([train_results_df, tmp], axis = 0)
-train_results_df.to_csv(f"{current_model}/train_val_results_all.csv")
+# wanted = ['params', 'mean_test_accuracy', 'std_test_accuracy','mean_train_accuracy', 'std_train_accuracy',
+#        'algorithm']
+# train_results_df = pd.DataFrame()
+# for experiment in Results["train"].keys():
+#     train_table = Results["train"][experiment]
+# #     train_table = test_table.rename(columns= {col_name: experiment + "_" + col_name for col_name in train_table.columns})
+#     train_table.to_csv(f"{current_model}/train/train_results_{experiment}.csv")
+#     tmp = train_table[wanted]
+#     train_results_df = pd.concat([train_results_df, tmp], axis = 0)
+# train_results_df.to_csv(f"{current_model}/train_val_results_all.csv")
 
-CV_record_all.to_csv(f"{current_model}/CV_record_all.csv")
-
-
-test_results_df = pd.DataFrame()
-for experiment in Results["test"].keys():
-    test_table = Results["test"][experiment]
-    test_table = test_table.rename(columns= {col_name: experiment + "_" + col_name for col_name in test_table.columns})
-    test_results_df = pd.concat([test_results_df, test_table], axis = 1)
-# display(test_results_df)
-test_results_df.to_csv(f"{current_model}/test_results.csv")
+# CV_record_all.to_csv(f"{current_model}/CV_record_all.csv")
 
 
-# In[29]:
+# test_results_df = pd.DataFrame()
+# for experiment in Results["test"].keys():
+#     test_table = Results["test"][experiment]
+#     test_table = test_table.rename(columns= {col_name: experiment + "_" + col_name for col_name in test_table.columns})
+#     test_results_df = pd.concat([test_results_df, test_table], axis = 1)
+# # display(test_results_df)
+# test_results_df.to_csv(f"{current_model}/test_results.csv")
 
 
-res = {}
-for experiment in Results["test"].keys():
-    acc, _, _ = test_results_df.loc["accuracy"][[experiment+"_precision", experiment+"_recall", experiment+"_f1-score"]]
-    macro_prc, macro_recall, macro_f1 = test_results_df.loc["macro avg"][[experiment+"_precision", experiment+"_recall", experiment+"_f1-score"]]
-    weighted_prc, weighted_recall, weighted_f1 = test_results_df.loc["weighted avg"][[experiment+"_precision", experiment+"_recall", experiment+"_f1-score"]]
+# # In[29]:
+
+
+# res = {}
+# for experiment in Results["test"].keys():
+#     acc, _, _ = test_results_df.loc["accuracy"][[experiment+"_precision", experiment+"_recall", experiment+"_f1-score"]]
+#     macro_prc, macro_recall, macro_f1 = test_results_df.loc["macro avg"][[experiment+"_precision", experiment+"_recall", experiment+"_f1-score"]]
+#     weighted_prc, weighted_recall, weighted_f1 = test_results_df.loc["weighted avg"][[experiment+"_precision", experiment+"_recall", experiment+"_f1-score"]]
     
     
-#     res[experiment] = [acc, macro_prc, macro_recall, macro_f1, weighted_prc, weighted_recall, weighted_f1]
-    res[experiment] = {
-                        "acc":acc,
-                        "macro_prc":macro_prc,
-                        "macro_recall":macro_recall,
-                        "macro_f1":macro_f1,
-                        "micro_prc":macro_prc,
-                        "micro_recall":macro_recall,
-                        "micro_f1":macro_f1,
-                        "weighted_prc":weighted_prc,
-                        "weighted_recall":weighted_recall,
-                        "weighted_f1":weighted_f1
-    }
+# #     res[experiment] = [acc, macro_prc, macro_recall, macro_f1, weighted_prc, weighted_recall, weighted_f1]
+#     res[experiment] = {
+#                         "acc":acc,
+#                         "macro_prc":macro_prc,
+#                         "macro_recall":macro_recall,
+#                         "macro_f1":macro_f1,
+#                         "micro_prc":macro_prc,
+#                         "micro_recall":macro_recall,
+#                         "micro_f1":macro_f1,
+#                         "weighted_prc":weighted_prc,
+#                         "weighted_recall":weighted_recall,
+#                         "weighted_f1":weighted_f1
+#     }
     
-    #     res[experiment]["acc"] = acc
-#     res[experiment]["macro_prc"] = macro_prc
-#     res[experiment]["macro_recall"] = macro_recall
-#     res[experiment]["macro_f1"] = macro_f1
-#     res[experiment]["weighted_prc"] = weighted_prc
-#     res[experiment]["weighted_re?call"] = weighted_recall
-#     res[experiment]["weighted_f1"] = weighted_f1
+#     #     res[experiment]["acc"] = acc
+# #     res[experiment]["macro_prc"] = macro_prc
+# #     res[experiment]["macro_recall"] = macro_recall
+# #     res[experiment]["macro_f1"] = macro_f1
+# #     res[experiment]["weighted_prc"] = weighted_prc
+# #     res[experiment]["weighted_re?call"] = weighted_recall
+# #     res[experiment]["weighted_f1"] = weighted_f1
     
-res = pd.DataFrame.from_dict(res, orient ='index')#, columns = ["acc", "macro_prc", "macro_recall", "macro_f1", "weighted_prc", "weighted_recall", "weighted_f1"])
-# fig = plt.figure()
-fig, ax = plt.subplots(1, 1, figsize=(10, 5), tight_layout=True)
-res.plot(kind='bar', title="Testing results", ax = ax)
-plt.legend(bbox_to_anchor=(1, 1))
-plt.grid()
-# Major ticks every 20, minor ticks every 5
-major_ticks = np.arange(0, 1, 0.1)
-minor_ticks = np.arange(0, 1, 0.01)
+# res = pd.DataFrame.from_dict(res, orient ='index')#, columns = ["acc", "macro_prc", "macro_recall", "macro_f1", "weighted_prc", "weighted_recall", "weighted_f1"])
+# # fig = plt.figure()
+# fig, ax = plt.subplots(1, 1, figsize=(10, 5), tight_layout=True)
+# res.plot(kind='bar', title="Testing results", ax = ax)
+# plt.legend(bbox_to_anchor=(1, 1))
+# plt.grid()
+# # Major ticks every 20, minor ticks every 5
+# major_ticks = np.arange(0, 1, 0.1)
+# minor_ticks = np.arange(0, 1, 0.01)
 
 
-# plt.xticks(major_ticks)
-# plt.xticks(minor_ticks, minor=True)
-plt.yticks(major_ticks)
-plt.yticks(minor_ticks, minor=True)
+# # plt.xticks(major_ticks)
+# # plt.xticks(minor_ticks, minor=True)
+# plt.yticks(major_ticks)
+# plt.yticks(minor_ticks, minor=True)
 
-# And a corresponding grid
-ax.grid(which='both')
+# # And a corresponding grid
+# ax.grid(which='both')
 
-# Or if you want different settings for the grids:
-plt.grid(which='minor', alpha=0.2)
-plt.grid(which='major', alpha=0.5)
-plt.savefig(f"{current_model}/test_results_graph.png")
+# # Or if you want different settings for the grids:
+# plt.grid(which='minor', alpha=0.2)
+# plt.grid(which='major', alpha=0.5)
+# plt.savefig(f"{current_model}/test_results_graph.png")
 
